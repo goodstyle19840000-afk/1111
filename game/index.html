@@ -104,15 +104,21 @@
         /* =========================================
            4. Game Specific Styles
            ========================================= */
-        .bg-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
-        .bg-video.active { opacity: 1; }
+           
+        /* ★ iOS対応：完全透明(0)ではなく0.01にしてSafariのサスペンドを回避 ★ */
+        .bg-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; opacity: 0.01; pointer-events: none; transition: opacity 0.2s; }
+        .bg-video.active { opacity: 1; z-index: 1;}
 
         /* Click Game */
         .play-area { position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: pointer; user-select: none; touch-action: none; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
-        .enemy-media { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 40px var(--danger-glow)); opacity: 0; pointer-events: none; transition: transform 0.05s; }
-        .enemy-media.active { opacity: 1; }
+        
+        /* ★ iOS対応：opacity 0.01 ハック ★ */
+        .enemy-media { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 40px var(--danger-glow)); opacity: 0.01; pointer-events: none; transition: transform 0.05s; }
+        .enemy-media.active { opacity: 1; z-index: 2; }
         .play-area.hit .enemy-media { transform: scale(0.95); }
         
+        .video-hidden { opacity: 0.01 !important; pointer-events: none !important; position: absolute !important; z-index: -100 !important; width: 1px !important; height: 1px !important; }
+
         .hp-bar-wrapper { position: absolute; bottom: 4.5rem; left: 50%; transform: translateX(-50%); width: 85%; max-width: 500px; z-index: 10; pointer-events: none; }
         @media (max-width: 900px) { .hp-bar-wrapper { bottom: 4rem; width: 90%; } }
         .hp-bar-container { width: 100%; height: 14px; background: rgba(0,0,0,0.6); border-radius: 8px; overflow: hidden; border: 1px solid var(--glass-border); box-shadow: inset 0 0 10px rgba(0,0,0,0.8); }
@@ -124,9 +130,9 @@
         /* Reaction & Time Game */
         .full-area { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); border-radius: 20px; touch-action: none; z-index: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
         .full-area::after { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0.4); z-index: 1; pointer-events: none; }
-        .reaction-msg { font-size: 2rem; font-weight: bold; color: #fff; text-align: center; text-shadow: 0 0 10px #000; z-index: 2; pointer-events: none; }
-        .reaction-submsg { font-size: 1rem; color: #fff; margin-top: 0.5rem; text-align: center; text-shadow: 0 0 5px #000; z-index: 2; pointer-events: none; }
-        .time-display-large { font-size: 5rem; font-weight: bold; color: var(--accent-color); text-shadow: 0 0 30px var(--accent-glow); font-variant-numeric: tabular-nums; margin: 2rem 0; z-index: 2; pointer-events: none; }
+        .reaction-msg { font-size: 2rem; font-weight: bold; color: #fff; text-align: center; text-shadow: 0 0 10px #000; z-index: 3; pointer-events: none; }
+        .reaction-submsg { font-size: 1rem; color: #fff; margin-top: 0.5rem; text-align: center; text-shadow: 0 0 5px #000; z-index: 3; pointer-events: none; }
+        .time-display-large { font-size: 5rem; font-weight: bold; color: var(--accent-color); text-shadow: 0 0 30px var(--accent-glow); font-variant-numeric: tabular-nums; margin: 2rem 0; z-index: 3; pointer-events: none; }
 
         /* Overlays & Tables */
         .countdown-overlay { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); border-radius: 20px; z-index: 20; opacity: 0; }
@@ -181,14 +187,13 @@
 
                 <div class="play-area" id="c_target">
                     <img src="enemy.webp" class="enemy-media active" id="c_img" alt="敵" onerror="this.src='enemy.png'">
-                    
-                    <video id="vid_s" class="enemy-media" src="dead_s_rank.mp4" muted playsinline webkit-playsinline preload="auto"></video>
-                    <video id="vid_a" class="enemy-media" src="dead_a_rank.mp4" muted playsinline webkit-playsinline preload="auto"></video>
-                    <video id="vid_b" class="enemy-media" src="dead_b_rank.mp4" muted playsinline webkit-playsinline preload="auto"></video>
-                    <video id="vid_c" class="enemy-media" src="dead_c_rank.mp4" muted playsinline webkit-playsinline preload="auto"></video>
-                    <video id="vid_d" class="enemy-media" src="dead_d_rank.mp4" muted playsinline webkit-playsinline preload="auto"></video>
-                    <video id="vid_e" class="enemy-media" src="dead_e_rank.mp4" muted playsinline webkit-playsinline preload="auto"></video>
-                    <video id="vid_f" class="enemy-media" src="dead_f_rank.mp4" muted playsinline webkit-playsinline preload="auto"></video>
+                    <video id="vid_s" class="enemy-media video-hidden" src="dead_s_rank.mp4" muted playsinline webkit-playsinline preload="auto"></video>
+                    <video id="vid_a" class="enemy-media video-hidden" src="dead_a_rank.mp4" muted playsinline webkit-playsinline preload="auto"></video>
+                    <video id="vid_b" class="enemy-media video-hidden" src="dead_b_rank.mp4" muted playsinline webkit-playsinline preload="auto"></video>
+                    <video id="vid_c" class="enemy-media video-hidden" src="dead_c_rank.mp4" muted playsinline webkit-playsinline preload="auto"></video>
+                    <video id="vid_d" class="enemy-media video-hidden" src="dead_d_rank.mp4" muted playsinline webkit-playsinline preload="auto"></video>
+                    <video id="vid_e" class="enemy-media video-hidden" src="dead_e_rank.mp4" muted playsinline webkit-playsinline preload="auto"></video>
+                    <video id="vid_f" class="enemy-media video-hidden" src="dead_f_rank.mp4" muted playsinline webkit-playsinline preload="auto"></video>
                 </div>
 
                 <div class="hp-bar-wrapper">
@@ -349,7 +354,7 @@
                 return res;
             },
             countdown: (overlay, textEl, onComplete) => {
-                Engine.unlock(); // スタートボタン押下時にiPhoneの動画制限を完全解除
+                Engine.unlock(); 
                 overlay.style.display = 'flex'; setTimeout(() => overlay.classList.add('show'), 10);
                 let count = 3; textEl.textContent = count; textEl.style.animation = 'popIn 0.8s ease';
                 const intv = setInterval(() => {
@@ -381,19 +386,11 @@
             unlock() {
                 this.initAudio();
                 if(this.unlocked) return; this.unlocked = true;
-                
-                // iOS Video Autoplay Unlock: 全てのvideoタグを一瞬再生して止める最強ハック
+                // iOS Video Autoplay Unlock: ページ内の全動画を一度再生可能状態にする
                 document.querySelectorAll('video').forEach(v => {
-                    v.muted = true; v.playsInline = true;
-                    const p = v.play();
+                    let p = v.play();
                     if (p !== undefined) {
-                        p.then(() => { 
-                            // 背景系（ループ）以外の動画は一時停止しておく
-                            if (!v.hasAttribute('autoplay')) { 
-                                v.pause(); 
-                                v.currentTime = 0; 
-                            } 
-                        }).catch(e => console.warn("iOS Autoplay Unlock 失敗 (低電力モード等の可能性):", e));
+                        p.catch(e => console.warn("Autoplay prevention:", e));
                     }
                 });
             }
@@ -420,16 +417,20 @@
                 const t = item.getAttribute('data-target');
                 document.querySelectorAll('.game-section').forEach(sec => sec.classList.remove('active')); document.getElementById(t).classList.add('active');
                 updateBest(t);
-                // Re-trigger autoplay videos for active tab
-                document.getElementById(t).querySelectorAll('video[autoplay]').forEach(v => { let p = v.play(); if(p) p.catch(e=>{}); });
+                
+                // タブを切り替えた時に、背景のautoplay動画が止まるiOSバグ対策
+                document.getElementById(t).querySelectorAll('video[autoplay]').forEach(v => {
+                    let p = v.play(); if(p !== undefined) p.catch(e=>{}); 
+                });
             });
         });
 
         // ==========================================
-        // 🎯 1. Click Game Module
+        // 🎯 1. Click Game Module (iOSハック版)
         // ==========================================
         const ClickGame = {
-            dur: 10, maxHp: 100, score: 0, playing: false, frame: 0, idle: null, hist: Utils.load('h_clk'),
+            dur: 10, maxHp: 100, score: 0, state: 'idle', // idle, playing, pending_result, ended
+            frame: 0, idle: null, fallbackTimer: null, hist: Utils.load('h_clk'),
             imgs: ['attack1.webp', 'attack2.webp', 'attack3.webp', 'attack4.webp', 'attack5.webp', 'attack6.webp'],
             ranks: [
                 {req: 999, n: "👑 【S級】 神レベル", id: "vid_s"}, {req: 100, n: "👑 【S級】 神レベル", id: "vid_s"},
@@ -440,25 +441,31 @@
             els: { t: Utils.el('c_target'), img: Utils.el('c_img'), hp: Utils.el('c_hp'), time: Utils.el('c_time'), sc: Utils.el('c_score'), over: Utils.el('c_result'), fs: Utils.el('c_rscore'), rt: Utils.el('c_rtitle'), tb: Utils.el('c_tbody'), btn: Utils.el('c_start'), lvls: document.querySelectorAll('#clickGame .level-item') },
             
             init() {
-                this.score = 0; this.playing = false; clearTimeout(this.idle);
+                this.score = 0; this.state = 'idle'; clearTimeout(this.idle); clearTimeout(this.fallbackTimer);
                 this.els.sc.textContent = 0; this.els.time.textContent = this.dur.toFixed(1); this.els.hp.style.width = '100%';
                 
-                // 全ての撃破動画を隠してリセット
-                document.querySelectorAll('#c_target video').forEach(v => { v.classList.remove('active'); v.pause(); v.currentTime = 0; });
+                // 全ての動画を隠して初期化
+                document.querySelectorAll('#clickHitTarget video').forEach(v => {
+                    v.classList.add('video-hidden'); v.classList.remove('active'); v.pause(); v.currentTime = 0;
+                });
                 
                 this.els.img.classList.add('active'); this.els.img.src = 'enemy.webp';
                 this.els.over.classList.remove('show'); this.els.btn.style.display = 'block';
-                
-                // 初期化時（プレイ前）は画面タップ不可
                 this.els.t.style.pointerEvents = 'none'; 
-                
                 this.els.lvls.forEach(i=>i.classList.remove('achieved')); this.updateTbl();
             },
             hit(e) {
-                if(!this.playing) return; Engine.playHit();
+                // タイマー終了直後のタップ（最後の1撃）で結果画面と動画を呼び出す！
+                if (this.state === 'pending_result') {
+                    this.showResult();
+                    return;
+                }
+                if (this.state !== 'playing') return;
+
+                Engine.playHit();
                 this.frame = (this.frame + 1) % this.imgs.length; this.els.img.src = this.imgs[this.frame];
                 this.els.t.classList.add('hit'); void this.els.t.offsetWidth; this.els.t.classList.remove('hit');
-                clearTimeout(this.idle); this.idle = setTimeout(() => { if(this.playing) this.els.img.src = 'enemy.webp'; }, 150);
+                clearTimeout(this.idle); this.idle = setTimeout(() => { if(this.state === 'playing') this.els.img.src = 'enemy.webp'; }, 150);
                 
                 this.score++; this.els.sc.textContent = this.score;
                 this.els.hp.style.width = `${Math.max(0, (this.maxHp - this.score) / this.maxHp * 100)}%`;
@@ -469,26 +476,35 @@
                 d.style.left = `${x - rect.left - 30 + (Math.random()-0.5)*40}px`; d.style.top = `${y - rect.top - 40}px`;
                 this.els.t.appendChild(d); setTimeout(()=>d.remove(), 500);
             },
-            end() {
-                this.playing = false; this.els.time.textContent = '0.0'; clearTimeout(this.idle);
-                this.els.t.style.pointerEvents = 'none'; // 終了時にタップロック
+            endTimer() {
+                this.state = 'pending_result';
+                this.els.time.textContent = '0.0';
+                // 連打を止めてしまっていたユーザーのためのフォールバック（0.5秒後に自動リザルト）
+                this.fallbackTimer = setTimeout(() => {
+                    if(this.state === 'pending_result') this.showResult();
+                }, 500);
+            },
+            showResult() {
+                if (this.state === 'ended') return;
+                this.state = 'ended';
+                clearTimeout(this.fallbackTimer); clearTimeout(this.idle);
+                this.els.t.style.pointerEvents = 'none';
                 
                 let rank = this.ranks[this.ranks.length-1];
                 for(let r of this.ranks) { if(this.score >= r.req) { rank = r; break; } }
                 
-                // 画像を消して該当IDの動画を表示＆再生
                 this.els.img.classList.remove('active');
+                
+                // 該当するIDの動画を呼び出して直接Play！(ユーザーのタップイベント内なのでブロックされない)
                 const targetVid = document.getElementById(rank.id);
-                if(targetVid) {
+                if (targetVid) {
+                    targetVid.classList.remove('video-hidden');
                     targetVid.classList.add('active');
                     targetVid.currentTime = 0; 
-                    const p = targetVid.play(); 
-                    if (p !== undefined) {
-                        p.catch(e => {
-                            console.log("iOS省電力モード等により動画ブロック。静止画で代替します。", e);
-                            this.els.img.classList.add('active'); // エラー時は静止画に戻すフェイルセーフ
-                        });
-                    }
+                    targetVid.play().catch(e => {
+                        console.log("iOS動画ブロック(低電力モード等)。静止画を再表示します", e);
+                        this.els.img.classList.add('active');
+                    });
                 }
 
                 this.els.lvls.forEach(i=>{ if(this.score >= parseInt(i.dataset.req)) i.classList.add('achieved'); });
@@ -506,24 +522,28 @@
 
         let isTouching = false;
         ClickGame.els.t.addEventListener('touchstart', e => { e.preventDefault(); isTouching = true; ClickGame.hit(e); }, {passive: false});
-        ClickGame.els.t.addEventListener('mousedown', e => { if(isTouching) return; ClickGame.hit(e); });
+        ClickGame.els.t.addEventListener('mousedown', e => { if(!isTouching) ClickGame.hit(e); });
         
         ClickGame.els.btn.addEventListener('click', () => {
             ClickGame.init(); ClickGame.els.btn.style.display = 'none';
             Utils.countdown(Utils.el('c_count_overlay'), Utils.el('c_count_text'), () => {
-                ClickGame.playing = true; 
-                // ★カウントダウン終了と同時に画面タップを許可！★
+                ClickGame.state = 'playing';
                 ClickGame.els.t.style.pointerEvents = 'auto'; 
-                
                 let st = performance.now();
                 requestAnimationFrame(function loop(cur) {
-                    if(!ClickGame.playing) return;
+                    if(ClickGame.state !== 'playing') return;
                     let left = ClickGame.dur - (cur - st)/1000;
-                    if(left <= 0) ClickGame.end(); else { ClickGame.els.time.textContent = left.toFixed(1); requestAnimationFrame(loop); }
+                    if(left <= 0) { ClickGame.endTimer(); } else { ClickGame.els.time.textContent = left.toFixed(1); requestAnimationFrame(loop); }
                 });
             });
         });
-        Utils.el('c_retry').addEventListener('click', () => ClickGame.els.btn.click());
+        Utils.el('c_retry').addEventListener('click', () => {
+            // もう一度ボタンを押した時、動画を隠してリセット
+            document.querySelectorAll('#clickHitTarget video').forEach(v => {
+                v.classList.add('video-hidden'); v.classList.remove('active'); v.pause(); v.currentTime = 0;
+            });
+            ClickGame.els.btn.click();
+        });
         Utils.el('c_dl').addEventListener('click', () => Utils.downloadCSV(`連打履歴.csv`, "TRY,スコア,CPS,ランク", ClickGame.hist.map(r=>`${r.t},${r.s},${r.c},${r.r}`)));
 
         // ==========================================
