@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>反射力（決断力）測定 - ULTIMATE FULLSCREEN</title>
+    <style>
+        /* =========================================
+           1. 基本設定＆カラーパレット
+           ========================================= */
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f172a, #1e1b4b, #0f172a);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --accent-color: #0ea5e9; 
+            --accent-glow: rgba(14, 165, 233, 0.6);
+            --danger-color: #ef4444;
+            --danger-glow: rgba(239, 68, 68, 0.6);
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Helvetica Neue', Arial, sans-serif; user-select: none; }
+        body { background: var(--bg-gradient); color: var(--text-main); display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; min-height: 100dvh; padding: 0; overflow: hidden; -webkit-text-size-adjust: 100%; touch-action: manipulation; }
+
+        /* ポータルへ戻るボタン */
+        .back-btn {
+            position: absolute; top: 15px; left: 15px; z-index: 100;
+            display: inline-flex; align-items: center; gap: 5px; color: #fff; text-decoration: none; font-size: 0.9rem; font-weight: bold; background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: all 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .back-btn:hover { background: rgba(0,0,0,0.7); transform: translateY(-2px); border-color: rgba(255,255,255,0.4); }
+
+        /* =========================================
+           2. ゲームパネル (全画面)
+           ========================================= */
+        .game-panel {
+            width: 100vw; height: 100vh; height: 100dvh; 
+            background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); 
+            display: flex; flex-direction: column; position: relative; overflow: hidden; transition: all 0.3s ease;
+        }
+
+        .top-controls { padding: 65px 15px 15px 15px; z-index: 10; flex-shrink: 0; position: relative; }
+        .status-bar { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; font-size: 1.3rem; font-weight: bold; background: rgba(0, 0, 0, 0.4); border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); color: #fff; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); max-width: 600px; margin: 0 auto; }
+        .title-left { color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+        .time-display { color: var(--accent-color); font-variant-numeric: tabular-nums; text-shadow: 0 0 10px var(--accent-glow);}
+
+        /* =========================================
+           3. プレイエリアと反射画像アニメーション
+           ========================================= */
+        .play-area { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; min-height: 0; padding: 10px; width: 100%; height: 100%; }
+        
+        /* 状態メッセージ */
+        .reaction-msg {
+            font-size: 2.5rem; font-weight: bold; color: #fff; text-shadow: 0 0 20px var(--accent-glow);
+            text-align: center; z-index: 5; pointer-events: none; transition: all 0.2s;
+        }
+        .reaction-msg.waiting { color: var(--warning-color); text-shadow: 0 0 20px rgba(245, 158, 11, 0.6); animation: pulse 1s infinite alternate; }
+        .reaction-msg.false-start { color: var(--danger-color); text-shadow: 0 0 20px var(--danger-glow); transform: scale(1.2); }
+        .reaction-msg.now { color: transparent; /* 画像が出た時は文字を消す */ }
+
+        @keyframes pulse { from { opacity: 0.5; } to { opacity: 1; } }
+
+        /* ⚡ bgフォルダから呼び出されるターゲット画像 */
+        .reaction-media {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.5);
+            width: 90%; max-width: 800px; height: 80%; max-height: 600px;
+            object-fit: cover; border-radius: 20px; border: 2px solid var(--accent-color);
+            box-shadow: 0 0 50px var(--accent-glow);
+            opacity: 0; pointer-events: none; z-index: 10;
+            transition: opacity 0.05s, transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        /* 出現時（CLICKの合図） */
+        .reaction-media.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        
+        /* 撃破時（サイバー爆発） */
+        .reaction-media.explode { animation: digitalExplosion 0.8s cubic-bezier(0.1, 0.8, 0.3, 1) forwards; }
+        @keyframes digitalExplosion {
+            0% { transform: translate(-50%, -50%) scale(1); filter: brightness(1) drop-shadow(0 0 20px var(--danger-glow)); opacity: 1; }
+            20% { transform: translate(-50%, -50%) scale(1.05) rotate(3deg); filter: brightness(2) invert(1) hue-rotate(90deg); opacity: 1; }
+            40% { transform: translate(-50%, -50%) scale(0.95) rotate(-3deg); filter: brightness(3) invert(0); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(2); filter: brightness(10) blur(20px); opacity: 0; }
+        }
+
+        /* 浮き上がるタイム表示 */
+        .floating-damage { position: absolute; color: #fff; font-weight: bold; font-size: 3.5rem; text-shadow: 0 0 15px var(--success-color), 0 0 30px var(--success-color); pointer-events: none; animation: floatUp 0.8s ease-out forwards; z-index: 50; }
+        @keyframes floatUp { 0% { transform: translateY(0) scale(0.5); opacity: 0; } 20% { transform: translateY(-20px) scale(1.2); opacity: 1; } 100% { transform: translateY(-120px) scale(1.5); opacity: 0; } }
+
+        .start-btn { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); padding: 18px 50px; border: none; border-radius: 50px; font-size: 1.4rem; font-weight: bold; color: #fff; background: var(--accent-color); cursor: pointer; box-shadow: 0 4px 20px var(--accent-glow); letter-spacing: 2px; z-index: 25; transition: all 0.2s; white-space: nowrap; }
+        .start-btn:active { transform: translate(-50%, 2px); box-shadow: 0 2px 10px var(--accent-glow); }
+
+        /* =========================================
+           4. リザルト画面
+           ========================================= */
+        .result-overlay { 
+            position: absolute; inset: 0; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(15px); display: none; flex-direction: column; align-items: center; justify-content: flex-start; overflow-y: auto; -webkit-overflow-scrolling: touch;
+            z-index: 90; padding: 70px 15px 40px 15px; color: #fff; opacity: 0; transition: opacity 0.5s; 
+        }
+        .result-overlay.show { display: flex; opacity: 1; }
+        
+        .result-overlay::-webkit-scrollbar { width: 6px; }
+        .result-overlay::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 3px; }
+        .result-overlay::-webkit-scrollbar-thumb { background: var(--accent-color); border-radius: 3px; box-shadow: 0 0 10px var(--accent-glow); }
+
+        .result-title { font-size: 1.2rem; color: #94a3b8; margin-bottom: 5px; flex-shrink: 0; text-align: center;}
+        .result-score { font-size: 4.5rem; font-weight: bold; color: #fff; text-shadow: 0 0 20px var(--accent-glow); margin-bottom: 30px; line-height: 1; flex-shrink: 0; }
+        .result-score span { font-size: 2rem; color: #94a3b8; }
+
+        .rank-stamp {
+            font-size: 3rem; font-weight: bold; color: var(--success-color); text-shadow: 0 0 25px rgba(16, 185, 129, 0.8);
+            border: 4px solid var(--success-color); border-radius: 12px; padding: 10px 20px; margin-bottom: 40px;
+            transform: scale(3); opacity: 0; flex-shrink: 0; text-align: center; max-width: 95%; word-wrap: break-word;
+        }
+        .rank-stamp.drop { animation: stampDrop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes stampDrop { 0% { transform: scale(3) rotate(-10deg); opacity: 0; } 100% { transform: scale(1) rotate(-5deg); opacity: 1; } }
+
+        .btn-group { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 350px; flex-shrink: 0; margin-top: auto; margin-bottom: 10px; }
+        .cta-btn { width: 100%; padding: 15px; background: var(--accent-color); color: #fff; border-radius: 50px; font-weight: bold; font-size: 1.05rem; text-align: center; text-decoration: none; border: none; cursor: pointer; box-shadow: 0 4px 15px var(--accent-glow); transition: all 0.2s; white-space: nowrap; }
+        .cta-btn:active { transform: translateY(2px); box-shadow: 0 2px 8px var(--accent-glow); }
+        .cta-btn-outline { background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.3); box-shadow: none; }
+        .cta-btn-outline:active { background: rgba(255,255,255,0.2); }
+
+        /* =========================================
+           5. PC（大画面）向けの究極設定
+           ========================================= */
+        @media (min-width: 769px) {
+            .top-controls { padding: 80px 40px 20px 40px; }
+            .status-bar { font-size: 2rem; padding: 15px 30px; border-radius: 20px; }
+            
+            .reaction-msg { font-size: 4rem; }
+            .reaction-media { max-width: 1200px; max-height: 800px; border-width: 4px; }
+            .floating-damage { font-size: 6rem; }
+            
+            .start-btn { font-size: 2rem; padding: 25px 80px; bottom: 60px; }
+            
+            .result-overlay { padding-top: 100px; }
+            .result-title { font-size: 1.5rem; }
+            .result-score { font-size: 8rem; margin-bottom: 50px; }
+            .result-score span { font-size: 3rem; }
+            .rank-stamp { font-size: 5rem; padding: 15px 40px; margin-bottom: 60px; border-width: 6px; }
+            
+            .btn-group { max-width: 450px; gap: 20px; margin-bottom: 50px;}
+            .cta-btn { font-size: 1.3rem; padding: 20px; }
+        }
+
+        /* スマホ（極小画面）向け微調整 */
+        @media (max-width: 380px) {
+            .status-bar { font-size: 1.1rem; padding: 10px 15px; }
+            .reaction-msg { font-size: 1.8rem; }
+            .rank-stamp { font-size: 2.2rem; border-width: 3px; padding: 8px 15px; margin-bottom: 30px;}
+            .result-score { font-size: 3.8rem; }
+            .btn-group { gap: 10px; }
+            .cta-btn { padding: 14px; font-size: 0.95rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <a href="index.html" class="back-btn">⬅ ポータルへ戻る</a>
+
+    <div class="game-panel">
+        <div class="top-controls">
+            <div class="status-bar">
+                <div class="title-left">⚡ 反射力測定</div>
+                <div class="time-display">Time: <span id="r_time">0.000</span> s</div>
+            </div>
+        </div>
+
+        <div class="play-area" id="touchArea">
+            <div id="r_msg" class="reaction-msg">測定開始を押してください</div>
+            <img src="" id="r_img" class="reaction-media" alt="TARGET">
+        </div>
+
+        <button class="start-btn" id="r_start">測定開始</button>
+
+        <div class="result-overlay" id="r_result">
+            <div class="result-title">測定完了（REACTION TIME）</div>
+            <div class="result-score" id="r_rscore">0.000 <span>sec</span></div>
+            
+            <div class="rank-stamp" id="r_rank_stamp">RANK A</div>
+
+            <div class="btn-group">
+                <button class="cta-btn cta-btn-outline" id="r_retry">もう一度プレイ</button>
+                <a href="index.html" class="cta-btn">📊 レーダーチャートを確認</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =========================================
+        // 🔧 Audio Engine
+        // =========================================
+        const Engine = {
+            ctx: null,
+            initAudio() {
+                if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+            },
+            playHit() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.type = 'square'; 
+                osc.frequency.setValueAtTime(800, this.ctx.currentTime); 
+                osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.6, this.ctx.currentTime); 
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+                osc.start(); osc.stop(this.ctx.currentTime + 0.1);
+            }
+        };
+
+        // =========================================
+        // ⚡ 反射力ゲームロジック
+        // =========================================
+        const ReactGame = {
+            state: 'idle', // idle, waiting, now, ended
+            startTime: 0, 
+            timeoutId: null,
+            ranks: [
+                {req: 0.18, n: "S級 神", c: "#10b981"}, 
+                {req: 0.22, n: "A級 達人", c: "#0ea5e9"}, 
+                {req: 0.26, n: "B級 プロ", c: "#8b5cf6"},
+                {req: 0.30, n: "C級 一般人", c: "#f59e0b"}, 
+                {req: 0.40, n: "D級 初心者", c: "#ef4444"},
+                {req: 999,  n: "F級 不足", c: "#94a3b8"}
+            ],
+            els: { 
+                area: document.getElementById('touchArea'), msg: document.getElementById('r_msg'), 
+                img: document.getElementById('r_img'), timeDisplay: document.getElementById('r_time'),
+                btn: document.getElementById('r_start'), over: document.getElementById('r_result'), 
+                fs: document.getElementById('r_rscore'), stamp: document.getElementById('r_rank_stamp')
+            },
+            
+            init() {
+                this.state = 'idle'; clearTimeout(this.timeoutId);
+                this.els.timeDisplay.textContent = "0.000";
+                
+                this.els.msg.className = 'reaction-msg';
+                this.els.msg.textContent = "測定開始を押してください";
+                
+                this.els.img.className = 'reaction-media'; // リセット
+                this.els.img.src = "";
+                
+                this.els.over.classList.remove('show'); 
+                this.els.over.scrollTop = 0; 
+                this.els.stamp.classList.remove('drop');
+                this.els.btn.style.display = 'block';
+                this.els.btn.textContent = "測定開始";
+            },
+
+            startWaiting() {
+                Engine.initAudio();
+                this.state = 'waiting';
+                this.els.btn.style.display = 'none';
+                
+                this.els.msg.className = 'reaction-msg waiting';
+                this.els.msg.textContent = "待機..(画像出現でタップ！)";
+                
+                // ★ 待機中に裏側で1〜200のランダム画像を読み込んでおく（表示遅延を防ぐため）
+                const randomImgNum = Math.floor(Math.random() * 200) + 1;
+                this.els.img.src = `bg/bg (${randomImgNum}).webp`;
+
+                // 1.5秒 〜 4.5秒のランダムなタイミングで発動
+                const delay = Math.floor(Math.random() * 3000) + 1500;
+                this.timeoutId = setTimeout(() => {
+                    this.triggerNow();
+                }, delay);
+            },
+
+            triggerNow() {
+                this.state = 'now';
+                this.startTime = performance.now();
+                
+                this.els.msg.className = 'reaction-msg now';
+                // 隠しておいた画像を一気に表示！
+                this.els.img.classList.add('show');
+            },
+
+            hit(e) {
+                if (this.state === 'idle' || this.state === 'ended') return;
+
+                if (this.state === 'waiting') {
+                    // フライング処理
+                    clearTimeout(this.timeoutId);
+                    this.state = 'idle';
+                    this.els.msg.className = 'reaction-msg false-start';
+                    this.els.msg.textContent = "フライング！";
+                    this.els.btn.style.display = 'block';
+                    this.els.btn.textContent = "やり直す";
+                    return;
+                }
+
+                if (this.state === 'now') {
+                    // 正当なタップ
+                    this.state = 'ended';
+                    Engine.playHit();
+                    
+                    const reactionTime = (performance.now() - this.startTime) / 1000;
+                    this.els.timeDisplay.textContent = reactionTime.toFixed(3);
+                    
+                    // サイバー爆発エフェクト
+                    this.els.img.classList.add('explode');
+
+                    // 浮かび上がるタイム表示
+                    const d = document.createElement('div'); d.textContent = `${reactionTime.toFixed(3)}s!`; d.className = 'floating-damage';
+                    let x = e.clientX || (e.touches && e.touches[0].clientX) || window.innerWidth/2; 
+                    let y = e.clientY || (e.touches && e.touches[0].clientY) || window.innerHeight/2;
+                    d.style.left = `${x - 60}px`; d.style.top = `${y - 40}px`;
+                    this.els.area.appendChild(d); setTimeout(()=>d.remove(), 800);
+
+                    // localStorageへの保存処理（自己ベスト更新時のみ）
+                    let currentBest = localStorage.getItem('b_rea');
+                    if (!currentBest || currentBest === "---" || reactionTime < parseFloat(currentBest)) {
+                        localStorage.setItem('b_rea', reactionTime.toFixed(3));
+                    }
+
+                    // ランク判定
+                    let rank = this.ranks[this.ranks.length-1];
+                    for(let r of this.ranks) { if(reactionTime <= r.req) { rank = r; break; } }
+
+                    // リザルト画面セット
+                    this.els.fs.innerHTML = `${reactionTime.toFixed(3)} <span>sec</span>`;
+                    this.els.stamp.textContent = `RANK: ${rank.n}`;
+                    this.els.stamp.style.color = rank.c;
+                    this.els.stamp.style.borderColor = rank.c;
+                    this.els.stamp.style.textShadow = `0 0 30px ${rank.c}`;
+
+                    // 爆発後にリザルト表示
+                    setTimeout(() => {
+                        this.els.over.classList.add('show');
+                        setTimeout(() => {
+                            this.els.over.scrollTo({ top: this.els.over.scrollHeight / 2, behavior: 'smooth' });
+                        }, 200);
+                        setTimeout(() => {
+                            this.els.stamp.classList.add('drop');
+                        }, 300);
+                    }, 1000);
+                }
+            }
+        };
+
+        // イベントリスナー
+        let isTouching = false;
+        ReactGame.els.area.addEventListener('touchstart', e => { e.preventDefault(); isTouching = true; ReactGame.hit(e); }, {passive: false});
+        ReactGame.els.area.addEventListener('mousedown', e => { if(!isTouching) ReactGame.hit(e); });
+        
+        ReactGame.els.btn.addEventListener('click', (e) => {
+            e.stopPropagation(); // areaのクリックと被らないように
+            ReactGame.startWaiting();
+        });
+
+        document.getElementById('r_retry').addEventListener('click', () => {
+            ReactGame.init();
+        });
+
+        ReactGame.init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ビジネス知識力試験</title>
+    
+    <script src="data/questions.js"></script>
+
+    <style>
+        /* =========================================
+           1. サイバー・ダークカラーパレット
+           ========================================= */
+        :root {
+            --bg-dark: #0f172a;
+            --primary-color: #0ea5e9; 
+            --primary-hover: #38bdf8;
+            --card-bg: rgba(15, 23, 42, 0.8); 
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --success: #10b981; 
+            --danger: #ef4444;
+            --accent-glow: rgba(14, 165, 233, 0.6);
+        }
+
+        * { 
+            margin: 0; padding: 0; box-sizing: border-box; 
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            -webkit-touch-callout: none; 
+            -webkit-user-select: none;   
+            user-select: none;
+        }
+        body { background-color: #000; color: var(--text-main); display: flex; justify-content: center; align-items: center; min-height: 100vh; min-height: 100dvh; padding: 0; overflow: hidden; position: relative; -webkit-text-size-adjust: 100%; }
+
+        /* =========================================
+           2. 背景
+           ========================================= */
+        .bg-slider { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; background-color: #000; }
+        
+        .bg-slide { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background-size: cover; background-position: center center; 
+            opacity: 0; transition: opacity 2s ease-in-out, filter 0.6s, transform 0.6s; 
+        }
+        .bg-slide.active { opacity: 1; z-index: 1;}
+        .bg-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); z-index: -1; transition: opacity 0.5s; }
+
+        /* のぞき見モード */
+        body.view-bg .app-container,
+        body.view-bg .back-btn,
+        body.view-bg .bg-overlay {
+            opacity: 0 !important;
+            pointer-events: none;
+        }
+        body.view-bg .bg-slide {
+            filter: blur(0) brightness(1);
+            transform: scale(1.02);
+            z-index: 1000; 
+        }
+
+        /* 👑 修正: Z-indexをリザルトより上に設定 */
+        .back-btn {
+            position: absolute; top: 10px; left: 10px; z-index: 3000;
+            display: inline-flex; align-items: center; gap: 5px; color: #fff; text-decoration: none; font-size: 0.85rem; font-weight: bold; background: rgba(0,0,0,0.5); padding: 8px 15px; border-radius: 20px; border: 1px solid var(--glass-border); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: all 0.2s;
+        }
+        .back-btn:hover { background: rgba(0,0,0,0.7); transform: translateY(-2px); }
+
+        /* =========================================
+           3. レイアウト
+           ========================================= */
+        .app-container { 
+            width: 100%; max-width: 480px; height: 100dvh;
+            display: flex; flex-direction: column; 
+            padding: 55px 12px 10px 12px;
+            position: relative; z-index: 10; transition: opacity 0.5s;
+        }
+        
+        .progress-header { display: flex; justify-content: center; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+        .quiz-main-title { font-size: 1.1rem; font-weight: bold; color: #fff; text-shadow: 0 0 10px var(--accent-glow); }
+        #progressText { font-size: 0.9rem; font-weight: bold; color: var(--primary-color); }
+
+        .progress-bar-bg { width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; margin-bottom: 10px; flex-shrink: 0; }
+        .progress-fill { height: 100%; background: var(--primary-color); width: 0%; transition: width 0.4s ease; box-shadow: 0 0 10px var(--accent-glow); }
+
+        .slider-wrapper { position: relative; flex: 1; width: 100%; overflow: hidden; }
+
+        .quiz-card {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: var(--card-bg); 
+            padding: 15px; border-radius: 12px; 
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); 
+            border: 1px solid var(--glass-border); 
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            opacity: 0; transform: translateX(100px); pointer-events: none;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; flex-direction: column; overflow-y: auto;
+        }
+        .quiz-card.active { opacity: 1; transform: translateX(0); pointer-events: auto; }
+        .quiz-card.prev { opacity: 0; transform: translateX(-100px); }
+
+        .question-number { font-size: 0.8rem; color: var(--primary-color); font-weight: bold; margin-bottom: 4px; }
+        .question-text { font-size: 1.05rem; font-weight: bold; line-height: 1.4; margin-bottom: 10px; color: #fff; text-shadow: 0 0 5px rgba(0,0,0,0.5); }
+
+        .hint-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 20px; padding: 3px 10px; font-size: 0.75rem; color: var(--text-sub); cursor: pointer; margin-bottom: 12px; width: max-content; }
+        .hint-box { display: none; background: rgba(245, 158, 11, 0.1); border-left: 3px solid #f59e0b; padding: 8px; font-size: 0.8rem; color: #fbbf24; margin-bottom: 12px; line-height: 1.4; }
+
+        .choices-container { display: flex; flex-direction: column; gap: 8px; }
+        .choice-btn {
+            width: 100%; padding: 12px 14px; 
+            background: rgba(255, 255, 255, 0.05); 
+            border: 1px solid var(--glass-border); 
+            border-radius: 10px; font-size: 0.95rem; font-weight: bold; 
+            color: #fff; cursor: pointer; text-align: left; transition: all 0.2s;
+        }
+        .choice-btn:hover { background: rgba(255,255,255,0.1); border-color: var(--primary-color); }
+        .choice-btn.correct { background: var(--success) !important; color: #fff !important; border-color: var(--success) !important; box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
+        .choice-btn.incorrect { background: var(--danger) !important; color: #fff !important; border-color: var(--danger) !important; box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
+        .choice-btn.disabled { pointer-events: none; opacity: 0.6; }
+
+        .explanation-area { margin-top: 15px; padding: 12px; background: rgba(0,0,0,0.3); border-left: 4px solid var(--primary-color); font-size: 0.85rem; line-height: 1.4; color: var(--text-sub); display: none; }
+        .explanation-area strong { color: var(--primary-color); }
+        .next-btn { display: none; width: 100%; padding: 14px; background: var(--primary-color); color: #fff; border-radius: 8px; font-weight: bold; font-size: 1rem; border: none; cursor: pointer; margin-top: 15px; box-shadow: 0 4px 15px var(--accent-glow); }
+
+        /* =========================================
+           4. 👑 リザルト画面 (パネル制限を撤廃し画面全体表示へ)
+           ========================================= */
+        .result-card.active { 
+            position: fixed; inset: 0; z-index: 2000;
+            background: rgba(15, 23, 42, 0.95); 
+            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            width: 100vw !important; height: 100dvh !important;
+            max-width: none !important; max-height: none !important;
+            border-radius: 0 !important; border: none !important;
+            display: flex !important; flex-direction: column; 
+            justify-content: center; align-items: center; 
+            padding: 40px 20px; opacity: 1; transform: none !important;
+            pointer-events: auto;
+        }
+
+        .result-title { font-size: 1.1rem; color: var(--text-sub); margin-bottom: 5px; }
+        .result-score { font-size: 4.5rem; font-weight: bold; color: #fff; text-shadow: 0 0 20px var(--accent-glow); line-height: 1; margin-bottom: 15px; }
+
+        .rank-stamp {
+            font-size: 2.5rem; font-weight: bold; border: 4px solid; border-radius: 12px;
+            padding: 10px 20px; margin-bottom: 30px; transform: scale(3); opacity: 0; 
+            flex-shrink: 0; text-align: center; white-space: nowrap; display: inline-block;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .rank-stamp.drop { animation: stampDrop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes stampDrop { 0% { transform: scale(3) rotate(-10deg); opacity: 0; } 100% { transform: scale(1) rotate(-5deg); opacity: 1; } }
+
+        .btn-group { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 300px; }
+        .cta-btn { width: 100%; padding: 15px; background: var(--primary-color); color: #fff; border-radius: 50px; font-weight: bold; font-size: 1rem; text-align: center; text-decoration: none; border: none; cursor: pointer; box-shadow: 0 4px 15px var(--accent-glow); transition: all 0.2s; }
+        .cta-btn:active { transform: translateY(2px); }
+        .cta-btn-outline { background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border); box-shadow: none; }
+
+        /* PC向け最適化 */
+        @media (min-width: 769px) {
+            .app-container { max-width: 550px; padding-top: 60px; }
+            .quiz-main-title { font-size: 1.4rem; }
+            
+            .result-score { font-size: 8rem; }
+            .rank-stamp { font-size: 5rem; padding: 15px 40px; margin-bottom: 60px; border-width: 6px; }
+            
+            .btn-group { max-width: 380px; gap: 15px; }
+            .back-btn { top: 20px; left: 20px; font-size: 1rem; padding: 10px 25px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-slider" id="bgSlider"></div>
+    <div class="bg-overlay"></div>
+
+    <a href="index.html" class="back-btn">⬅ ポータルへ戻る</a>
+
+    <div class="app-container">
+        <div class="progress-header">
+            <span class="quiz-main-title">ビジネス知識力試験</span>
+            <span id="progressText">Q. 1 / 10</span>
+        </div>
+        <div class="progress-bar-bg"><div class="progress-fill" id="progressFill"></div></div>
+
+        <div class="slider-wrapper" id="sliderWrapper"></div>
+    </div>
+
+    <script>
+        const bgImages = Array.from({length: 100}, (_, i) => `bg/bg (${i + 1}).webp`);
+
+        function initBgSlider() {
+            const bgSlider = document.getElementById('bgSlider');
+            if(bgImages.length === 0) return;
+            const shuffledBgs = bgImages.sort(() => Math.random() - 0.5);
+            shuffledBgs.forEach((src, index) => {
+                const div = document.createElement('div');
+                div.className = `bg-slide ${index === 0 ? 'active' : ''}`;
+                div.style.backgroundImage = `url('${src}')`;
+                bgSlider.appendChild(div);
+            });
+            let currentBg = 0;
+            const slides = document.querySelectorAll('.bg-slide');
+            if(slides.length > 1) {
+                setInterval(() => {
+                    slides[currentBg].classList.remove('active');
+                    currentBg = (currentBg + 1) % slides.length;
+                    slides[currentBg].classList.add('active');
+                }, 5000); 
+            }
+        }
+
+        let quizData = [];
+        let currentIndex = 0;
+        let score = 0;
+        const wrapper = document.getElementById('sliderWrapper');
+        const progressText = document.getElementById('progressText');
+        const progressFill = document.getElementById('progressFill');
+
+        const ranks = [
+            {req: 10, n: "RANK: S級 神", c: "#10b981"}, 
+            {req: 8,  n: "RANK: A級 達人", c: "#0ea5e9"}, 
+            {req: 6,  n: "RANK: B級 プロ", c: "#8b5cf6"},
+            {req: 4,  n: "RANK: C級 一般人", c: "#f59e0b"}, 
+            {req: 0,  n: "RANK: D級 初心者", c: "#ef4444"}
+        ];
+
+        function getRandom10Questions() {
+            const arr = [...originalQuizData];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr.slice(0, 10);
+        }
+
+        function initApp() {
+            initBgSlider(); 
+            quizData = getRandom10Questions();
+            quizData.forEach((data, index) => {
+                const card = document.createElement('div');
+                card.className = `quiz-card ${index === 0 ? 'active' : ''}`;
+                card.id = `card-${index}`;
+                const buttonsHtml = data.choices.map((choice, i) => 
+                    `<button class="choice-btn" id="btn-${index}-${i}" onclick="handleChoice(${index}, ${i}, this)">${choice}</button>`
+                ).join('');
+                card.innerHTML = `
+                    <span class="question-number">Q${index + 1}.</span>
+                    <div class="question-text">${data.q}</div>
+                    <button class="hint-btn" onclick="toggleHint(${index})">💡 ヒントを表示</button>
+                    <div class="hint-box" id="hint-box-${index}">${data.hint || 'ヒントなし'}</div>
+                    <div class="choices-container">${buttonsHtml}</div>
+                    <div class="explanation-area" id="exp-${index}"><strong>📝 解説:</strong> ${data.exp}</div>
+                    <button class="next-btn" id="next-${index}" onclick="goNext()">次の問題へ進む</button>
+                `;
+                wrapper.appendChild(card);
+            });
+            const resultCard = document.createElement('div');
+            resultCard.className = 'quiz-card result-card';
+            resultCard.id = 'card-result';
+            wrapper.appendChild(resultCard);
+            updateProgress();
+        }
+
+        function toggleHint(index) {
+            const hb = document.getElementById(`hint-box-${index}`);
+            hb.style.display = hb.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function handleChoice(qIndex, selectedChoice, btnElement) {
+            const currentCard = document.getElementById(`card-${qIndex}`);
+            const allBtns = currentCard.querySelectorAll('.choice-btn');
+            const correctAns = quizData[qIndex].ans;
+            allBtns.forEach(btn => btn.classList.add('disabled'));
+            if (selectedChoice === correctAns) {
+                score++;
+                btnElement.classList.add('correct');
+            } else {
+                btnElement.classList.add('incorrect');
+                document.getElementById(`btn-${qIndex}-${correctAns}`).classList.add('correct');
+            }
+            document.getElementById(`exp-${qIndex}`).style.display = 'block';
+            document.getElementById(`next-${qIndex}`).style.display = 'block';
+            currentCard.scrollTo({ top: currentCard.scrollHeight, behavior: 'smooth' });
+        }
+
+        function goNext() {
+            document.getElementById(`card-${currentIndex}`).classList.remove('active');
+            document.getElementById(`card-${currentIndex}`).classList.add('prev');
+            currentIndex++;
+            if (currentIndex < quizData.length) {
+                document.getElementById(`card-${currentIndex}`).classList.add('active');
+            } else {
+                showResult();
+            }
+            updateProgress();
+        }
+
+        function updateProgress() {
+            if (currentIndex < quizData.length) {
+                progressText.innerText = `Q. ${currentIndex + 1} / ${quizData.length}`;
+                progressFill.style.width = `${(currentIndex / quizData.length) * 100}%`;
+            } else {
+                progressText.innerText = "試験終了";
+                progressFill.style.width = `100%`;
+            }
+        }
+
+        function showResult() {
+            const resultCard = document.getElementById('card-result');
+            const currentBest = parseInt(localStorage.getItem('b_quiz') || 0);
+            if (score > currentBest) localStorage.setItem('b_quiz', score);
+
+            let rank = ranks[ranks.length-1];
+            for(let r of ranks) { if(score >= r.req) { rank = r; break; } }
+
+            resultCard.innerHTML = `
+                <div class="result-title">総合正解数</div>
+                <div class="result-score">${score} <span style="font-size:1.5rem; color:var(--text-sub);">/ 10</span></div>
+                
+                <div class="rank-stamp" id="q_rank_stamp">${rank.n}</div>
+
+                <div class="btn-group">
+                    <button class="cta-btn" onclick="location.reload()">もう一度プレイ</button>
+                    <a href="index.html" class="cta-btn cta-btn-outline">📊 レーダーチャートを確認</a>
+                </div>
+            `;
+            resultCard.classList.add('active');
+
+            setTimeout(() => {
+                const stamp = document.getElementById('q_rank_stamp');
+                stamp.style.color = rank.c;
+                stamp.style.borderColor = rank.c;
+                stamp.style.textShadow = `0 0 20px ${rank.c}`;
+                stamp.classList.add('drop');
+            }, 300);
+        }
+
+        // 隠しコマンド：のぞき見機能
+        const triggerPeek = (e) => {
+            if (e.target.closest('.quiz-card') || e.target.closest('.back-btn')) return;
+            document.body.classList.add('view-bg');
+        };
+        const endPeek = () => document.body.classList.remove('view-bg');
+
+        window.addEventListener('mousedown', triggerPeek);
+        window.addEventListener('mouseup', endPeek);
+        window.addEventListener('touchstart', triggerPeek, { passive: true });
+        window.addEventListener('touchend', endPeek, { passive: true });
+        window.oncontextmenu = (e) => { 
+            if (!e.target.closest('.quiz-card') && !e.target.closest('.back-btn')) {
+                e.preventDefault(); e.stopPropagation(); return false; 
+            }
+        };
+
+        initApp();
+    </script>
+</body>
+</html>
