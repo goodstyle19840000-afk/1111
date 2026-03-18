@@ -445,7 +445,7 @@
                 this.els.sc.textContent = 0; this.els.time.textContent = this.dur.toFixed(1); this.els.hp.style.width = '100%';
                 
                 // 全ての動画を隠して初期化
-                document.querySelectorAll('#clickHitTarget video').forEach(v => {
+                document.querySelectorAll('#c_target video').forEach(v => {
                     v.classList.add('video-hidden'); v.classList.remove('active'); v.pause(); v.currentTime = 0;
                 });
                 
@@ -539,7 +539,7 @@
         });
         Utils.el('c_retry').addEventListener('click', () => {
             // もう一度ボタンを押した時、動画を隠してリセット
-            document.querySelectorAll('#clickHitTarget video').forEach(v => {
+            document.querySelectorAll('#c_target video').forEach(v => {
                 v.classList.add('video-hidden'); v.classList.remove('active'); v.pause(); v.currentTime = 0;
             });
             ClickGame.els.btn.click();
