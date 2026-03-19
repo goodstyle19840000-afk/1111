@@ -165,7 +165,7 @@
     <div class="game-panel">
         <div class="top-controls">
             <div class="status-bar">
-                <div class="time-left">⏱️ <span id="c_time">10.0</span> s</div>
+                <div class="time-left">🎯 処理力測定  ⏱️ <span id="c_time">10.0</span> s</div>
                 <div class="score-display">⚡ <span id="c_score">0</span> Hits</div>
             </div>
         </div>
@@ -178,7 +178,7 @@
             <div class="hp-bar-container"><div class="hp-bar-fill" id="c_hp"></div></div>
         </div>
 
-        <button class="start-btn" id="c_start">システム起動</button>
+        <button class="start-btn" id="c_start">スタート</button>
         
         <div class="countdown-overlay" id="c_count_overlay"><div class="countdown-text" id="c_count_text">3</div></div>
 
@@ -226,11 +226,11 @@
             dur: 10, maxHp: 120, score: 0, state: 'idle', frame: 0, idle: null,
             imgs: ['assets/attack1.webp', 'assets/attack2.webp', 'assets/attack3.webp', 'assets/attack4.webp', 'assets/attack5.webp', 'assets/attack6.webp'],
             ranks: [
-                {req: 120, n: "S級 神レベル", c: "#10b981"}, 
+                {req: 120, n: "S級 神", c: "#10b981"}, 
                 {req: 90, n: "A級 達人", c: "#0ea5e9"}, 
                 {req: 70, n: "B級 プロ", c: "#8b5cf6"},
-                {req: 50, n: "C級 一般人", c: "#f59e0b"}, 
-                {req: 0, n: "D級 初心者", c: "#ef4444"}
+                {req: 50, n: "C級 一般", c: "#f59e0b"}, 
+                {req: 0, n: "D級 素人", c: "#ef4444"}
             ],
             els: { 
                 t: document.getElementById('c_target'), img: document.getElementById('c_img'), 

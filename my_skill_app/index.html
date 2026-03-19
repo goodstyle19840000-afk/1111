@@ -309,7 +309,7 @@
 
         // 👑 修正: 初期状態設定関数（DOM順に関わらず、bg1を上にして表示）
         function initAppBg() {
-            const randomNum = Math.floor(Math.random() * 100) + 1;
+            const randomNum = Math.floor(Math.random() * 200) + 1;
             const imgUrl = `bg/bg (${randomNum}).webp`;
             bgs[0].style.backgroundImage = `url('${imgUrl}')`;
             
@@ -322,7 +322,7 @@
 
         function updateBg() {
             const nextIdx = (currentBgIdx + 1) % 2; // フェードインしてくる次の画像（bg2 -> bg1 -> ...）
-            const randomNum = Math.floor(Math.random() * 100) + 1;
+            const randomNum = Math.floor(Math.random() * 200) + 1;
             const img = new Image();
             img.src = `bg/bg (${randomNum}).webp`;
             img.onload = () => {
