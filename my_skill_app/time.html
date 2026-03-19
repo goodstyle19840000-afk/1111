@@ -3,371 +3,457 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>時間管理能力テスト - 10sec Challenge</title>
-    
+    <title>時間力測定（スケジューリング） - DEEP SPACE WARP</title>
     <style>
+        /* =========================================
+           1. 基本設定＆カラーパレット
+           ========================================= */
         :root {
-            --accent-blue: #0ea5e9;
+            --bg-gradient: linear-gradient(135deg, #0f172a, #1e1b4b, #0f172a);
+            --accent-color: #0ea5e9; 
             --accent-glow: rgba(14, 165, 233, 0.6);
-            --bg-dark: #020617;
-            --glass-bg: rgba(15, 23, 42, 0.7);
-            --glass-border: rgba(255, 255, 255, 0.15);
-            --text-main: #f8fafc;
-            --text-dim: #94a3b8;
-            --success: #10b981;
-            --danger: #ef4444;
+            --danger-color: #ef4444;
+            --danger-glow: rgba(239, 68, 68, 0.6);
+            --success-color: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.6);
+            --warning-color: #f59e0b;
         }
 
-        * { 
-            margin: 0; padding: 0; box-sizing: border-box; 
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Helvetica Neue', Arial, sans-serif; user-select: none; }
         
         /* 👑 iPhone Safari対策: 100dvh */
         body { 
-            background: var(--bg-dark); color: var(--text-main); 
-            min-height: 100dvh; overflow: hidden; 
-            display: flex; flex-direction: column; align-items: center;
+            background-color: #000; color: #f8fafc; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            min-height: 100dvh; height: 100dvh; 
+            padding: 0; overflow: hidden; -webkit-text-size-adjust: 100%; touch-action: manipulation; 
         }
 
         /* =========================================
-           👑 背景不動レイヤー・クロスフェード設定
+           2. フェードアウト用クラス
            ========================================= */
-        #bgContainer {
-            position: fixed !important; inset: 0 !important;
-            width: 100% !important; height: 100dvh !important;
-            z-index: -2;
+        .fade-target {
+            transition: opacity 2.5s ease-in; 
+        }
+        body.is-blackout .fade-target {
+            opacity: 0 !important;
             pointer-events: none;
-            overflow: hidden;
+        }
+        body.is-ended .fade-target {
+            transition: none !important;
+            opacity: 1 !important;
         }
 
-        .bg-layer {
-            position: absolute; inset: 0;
-            width: 100%; height: 100%;
-            background-size: cover; background-position: center center; background-repeat: no-repeat;
-            filter: blur(25px) brightness(0.35); 
-            transform: scale(1.15);
-            transition: opacity 2s ease-in-out, filter 0.6s, transform 0.6s, background-size 0.6s;
-            will-change: transform, opacity;
-            opacity: 0;
-        }
+        /* 背景 */
+        .app-base-bg { position: fixed; inset: 0; height: 100dvh; background: var(--bg-gradient); z-index: -3; }
 
-        /* 👑 のぞき見（隠しコマンド）発動時 */
-        body.view-bg #bgContainer { z-index: 1000 !important; }
-        body.view-bg .bg-layer { 
-            background-size: contain !important; /* 左右を途切れさせない */
-            filter: blur(0) brightness(0.9) !important; 
-            transform: scale(1.0) !important; 
-            background-color: #000;
-        }
-        /* のぞき見中はUIを消す */
-        body.view-bg .app-container, body.view-bg .back-btn, body.view-bg .scanlines {
-            opacity: 0 !important; pointer-events: none;
-        }
-
-        .scanlines {
-            position: fixed; inset: 0; z-index: -1;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%);
-            background-size: 100% 4px; pointer-events: none; transition: opacity 0.5s;
+        /* 👑 修正: 画像が絶対に途切れない設定 (object-fit: contain) */
+        .bg-img { 
+            position: fixed !important; 
+            top: 0 !important; left: 0 !important; 
+            width: 100% !important; 
+            height: 100dvh !important; 
+            object-fit: contain !important; /* 左右をカットせず全表示 */
+            z-index: -2; opacity: 0.4; 
         }
 
         .back-btn {
-            position: absolute; top: 10px; left: 10px; z-index: 3000;
-            display: inline-flex; align-items: center; gap: 5px; color: #fff; text-decoration: none; font-size: 0.85rem; font-weight: bold; background: rgba(0,0,0,0.5); padding: 8px 15px; border-radius: 20px; border: 1px solid var(--glass-border); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: all 0.2s;
+            position: absolute; top: 15px; left: 15px; z-index: 10005;
+            display: inline-flex; align-items: center; gap: 5px; color: #fff; text-decoration: none; font-size: 0.9rem; font-weight: bold; background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: all 0.2s;
         }
-        .back-btn:hover { background: rgba(0,0,0,0.7); transform: translateY(-2px); }
+        .back-btn:hover { background: rgba(0,0,0,0.7); transform: translateY(-2px); border-color: rgba(255,255,255,0.4); }
 
         /* =========================================
-           ⚙️ ゲームレイアウト
+           3. ゲームパネル & UI
            ========================================= */
-        .app-container { 
-            width: 100%; max-width: 480px; height: 100dvh;
-            display: flex; flex-direction: column; 
-            padding: 55px 20px 20px 20px;
-            position: relative; z-index: 10; transition: opacity 0.5s;
-        }
-        
-        header { text-align: center; margin-bottom: 10px; }
-        .game-title { font-size: 1.3rem; font-weight: bold; color: #fff; text-shadow: 0 0 15px var(--accent-glow); }
-        .game-desc { font-size: 0.8rem; color: var(--text-dim); margin-top: 4px; }
-
         .game-panel {
-            background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border); border-radius: 24px; padding: 30px 20px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.5); flex: 1;
-            display: flex; flex-direction: column; justify-content: space-around; align-items: center;
+            width: 100vw; height: 100dvh; 
+            background: transparent; 
+            display: flex; flex-direction: column; position: relative; overflow: hidden;
         }
 
-        .target-time { font-size: 1rem; color: var(--accent-blue); letter-spacing: 2px; font-weight: bold; }
+        .top-controls { padding: 65px 15px 15px 15px; z-index: 10; flex-shrink: 0; }
+        .status-bar { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; font-size: 1.3rem; font-weight: bold; background: rgba(0, 0, 0, 0.6); border-radius: 15px; border: 1px solid rgba(255,255,255,0.2); color: #fff; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); max-width: 600px; margin: 0 auto; }
+        .title-left { text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+        .status-msg { font-size: 1rem; color: var(--warning-color); text-shadow: 0 0 10px rgba(245, 158, 11, 0.6); animation: pulse 1s infinite alternate; }
+        @keyframes pulse { from { opacity: 0.5; } to { opacity: 1; } }
+
+        .play-area { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 0; padding: 10px; width: 100%; height: 100%; z-index: 5; }
         
-        /* タイマー表示エリア */
-        .timer-display { position: relative; width: 220px; height: 220px; display: flex; justify-content: center; align-items: center; }
-        .time-text { font-size: 4rem; font-weight: 900; color: #fff; text-shadow: 0 0 15px #fff; font-variant-numeric: tabular-nums; z-index: 10; }
-        /* 隠れた状態のテキスト */
-        .time-text.hidden { color: rgba(255,255,255,0.03); text-shadow: none; }
-
-        /* 円形プログレスバー */
-        .timer-svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
-        .timer-circle-bg { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 10; }
-        .timer-circle-bar { fill: none; stroke: var(--accent-blue); stroke-width: 10; stroke-linecap: round; stroke-dasharray: 628; stroke-dashoffset: 628; transition: stroke-dashoffset 0.1s linear; filter: drop-shadow(0 0 10px var(--accent-blue)); }
-
-        .advice-text { font-size: 0.85rem; color: var(--text-dim); text-align: center; line-height: 1.5; height: 3em; margin-bottom: 20px; }
-
-        .game-btn {
-            width: 100%; max-width: 280px; padding: 20px; 
-            background: var(--accent-blue); color: #fff; border-radius: 50px; 
-            font-weight: bold; font-size: 1.2rem; text-align: center; border: none; cursor: pointer; 
-            box-shadow: 0 4px 20px var(--accent-glow); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        .warp-scene { position: absolute; inset: 0; perspective: 300px; z-index: 1; opacity: 0; transition: opacity 0.5s; }
+        .warp-scene.show { opacity: 1; }
+        .warp-particle {
+            position: absolute; width: 3px; height: 3px; background: #fff; border-radius: 50%;
+            box-shadow: 0 0 10px #fff, 0 0 20px var(--accent-color); opacity: 0; animation: warpParticle 3s linear infinite;
         }
-        .game-btn:active { transform: scale(0.96); box-shadow: 0 2px 10px var(--accent-glow); }
-        .game-btn.stop { background: var(--danger); box-shadow: 0 4px 20px rgba(239, 68, 68, 0.5); }
-        .game-btn.reset { background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: #fff; box-shadow: none; margin-top: 15px;}
-
-        /* 結果表示オーバーレイ（全画面） */
-        #resultOverlay {
-            position: fixed; inset: 0; z-index: 2000;
-            background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-            display: flex; flex-direction: column; justify-content: center; align-items: center; 
-            padding: 40px 20px; opacity: 0; pointer-events: none; transition: opacity 0.5s;
+        @keyframes warpParticle {
+            0% { transform: translateZ(0) scale(1); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateZ(300px) scale(0); opacity: 0; }
         }
-        #resultOverlay.active { opacity: 1; pointer-events: auto; }
 
-        .result-title { font-size: 1rem; color: var(--text-dim); margin-bottom: 5px; }
-        .result-time-diff { font-size: 4rem; font-weight: bold; color: #fff; text-shadow: 0 0 20px var(--accent-glow); margin-bottom: 5px; }
-        .actual-time { font-size: 1rem; color: var(--text-sub); margin-bottom: 25px; }
+        .timer-display { font-size: 6rem; font-weight: bold; color: var(--accent-color); text-shadow: 0 0 30px var(--accent-glow); font-variant-numeric: tabular-nums; z-index: 10; pointer-events: none; transition: opacity 0.5s; }
+        .timer-display.hidden { opacity: 0; }
+
+        .start-btn { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); padding: 18px 50px; border: none; border-radius: 50px; font-size: 1.4rem; font-weight: bold; color: #fff; background: var(--accent-color); cursor: pointer; box-shadow: 0 4px 20px var(--accent-glow); letter-spacing: 2px; z-index: 60; white-space: nowrap; transition: transform 0.1s;}
+        .start-btn:active { transform: translate(-50%, 2px); }
+
+        .stop-flash { position: fixed; inset: 0; background: #fff; z-index: 99999; opacity: 0; pointer-events: none; transition: opacity 0.1s; }
+        .stop-flash.show { opacity: 1; transition: none; }
+
+        /* =========================================
+           4. 計算エフェクトUI
+           ========================================= */
+        .calc-ui {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            display: flex; flex-direction: column; align-items: center; z-index: 10001; pointer-events: none;
+            background: rgba(15, 23, 42, 0.85); padding: 30px 40px; border-radius: 20px;
+            box-shadow: 0 0 40px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.1); opacity: 0; 
+        }
+        .calc-stopped { font-size: 4rem; font-weight: bold; margin-bottom: 5px; opacity: 0; transform: translateY(20px); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-variant-numeric: tabular-nums; text-shadow: 0 0 15px rgba(255,255,255,0.5);}
+        .calc-target { font-size: 2.5rem; font-weight: bold; color: #cbd5e1; margin-bottom: 15px; opacity: 0; transform: translateY(20px); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-variant-numeric: tabular-nums; }
+        .calc-line { width: 100%; height: 3px; background: #fff; margin-bottom: 15px; opacity: 0; transform: scaleX(0); transition: all 0.4s ease; }
+        .calc-error { font-size: 5rem; font-weight: bold; opacity: 0; transform: scale(0.5); transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-variant-numeric: tabular-nums; }
         
-        /* ランクスタンプ */
+        .calc-ui.show-bg { opacity: 1; }
+        .calc-ui.step1 .calc-stopped { opacity: 1; transform: translateY(0); }
+        .calc-ui.step2 .calc-target { opacity: 1; transform: translateY(0); }
+        .calc-ui.step2 .calc-line { opacity: 1; transform: scaleX(1); }
+        .calc-ui.step3 .calc-error { opacity: 1; transform: scale(1); }
+
+        /* =========================================
+           5. リザルト画面
+           ========================================= */
+        .result-overlay { 
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); display: none; flex-direction: column; align-items: center; justify-content: flex-start; overflow-y: auto; -webkit-overflow-scrolling: touch;
+            z-index: 10002; padding: 70px 15px 40px 15px; opacity: 0; transition: opacity 0.5s; 
+        }
+        .result-overlay.show { display: flex; opacity: 1; }
+        .result-overlay::-webkit-scrollbar { width: 6px; }
+        .result-overlay::-webkit-scrollbar-thumb { background: var(--accent-color); border-radius: 3px; }
+
+        .result-title { font-size: 1.2rem; color: #94a3b8; margin-bottom: 5px; flex-shrink: 0; text-align: center;}
+        .result-score { font-size: 4.5rem; font-weight: bold; text-shadow: 0 0 20px var(--accent-glow); margin-bottom: 30px; line-height: 1; flex-shrink: 0; }
+        .result-score span { font-size: 2rem; color: #94a3b8; }
+
         .rank-stamp {
-            font-size: 2.5rem; font-weight: bold; border: 4px solid; border-radius: 12px;
-            padding: 10px 20px; margin-bottom: 40px; transform: scale(3); opacity: 0; white-space: nowrap;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-size: 3rem; font-weight: bold; color: var(--success-color); text-shadow: 0 0 25px rgba(16, 185, 129, 0.8); border: 4px solid var(--success-color); border-radius: 12px; padding: 10px 20px; margin-bottom: 40px; transform: scale(3); opacity: 0; flex-shrink: 0; text-align: center; max-width: 95%; word-wrap: break-word;
         }
         .rank-stamp.drop { animation: stampDrop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         @keyframes stampDrop { 0% { transform: scale(3) rotate(-10deg); opacity: 0; } 100% { transform: scale(1) rotate(-5deg); opacity: 1; } }
 
+        .btn-group { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 350px; flex-shrink: 0; margin-top: auto; margin-bottom: 10px; }
+        .cta-btn { width: 100%; padding: 15px; background: var(--accent-color); color: #fff; border-radius: 50px; font-weight: bold; font-size: 1.05rem; text-align: center; text-decoration: none; border: none; cursor: pointer; box-shadow: 0 4px 15px var(--accent-glow); white-space: nowrap; transition: transform 0.1s; }
+        .cta-btn:active { transform: translateY(2px); }
+        .cta-btn-outline { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); box-shadow: none; }
+
+        /* =========================================
+           PC・スマホ最適化
+           ========================================= */
         @media (min-width: 769px) {
-            .app-container { max-width: 500px; padding-top: 70px; }
-            .game-panel { padding: 40px; }
-            .timer-display { width: 280px; height: 280px; }
-            .time-text { font-size: 5rem; }
-            .timer-circle-bar { stroke-dasharray: 817; stroke-dashoffset: 817; } /* 半径130用 */
-            .result-time-diff { font-size: 6rem; }
-            .rank-stamp { font-size: 4rem; border-width: 6px; }
+            .top-controls { padding: 80px 40px 20px 40px; }
+            .status-bar { font-size: 2rem; padding: 15px 30px; border-radius: 20px; }
+            .timer-display { font-size: 12rem; }
+            .start-btn { font-size: 2rem; padding: 25px 80px; bottom: 60px; }
+            .calc-ui { padding: 40px 60px; }
+            .calc-stopped { font-size: 6rem; }
+            .calc-target { font-size: 4rem; }
+            .calc-error { font-size: 8rem; }
+            .result-overlay { padding-top: 100px; }
+            .result-title { font-size: 1.5rem; }
+            .result-score { font-size: 8rem; margin-bottom: 50px; }
+            .result-score span { font-size: 3rem; }
+            .rank-stamp { font-size: 5rem; padding: 15px 40px; margin-bottom: 60px; border-width: 6px; }
+            .btn-group { max-width: 450px; gap: 20px; margin-bottom: 50px;}
+            .cta-btn { font-size: 1.3rem; padding: 20px; }
+        }
+
+        @media (max-width: 380px) {
+            .status-bar { font-size: 1.1rem; padding: 10px 15px; }
+            .timer-display { font-size: 5rem; }
+            .calc-stopped { font-size: 3rem; }
+            .calc-target { font-size: 2rem; }
+            .calc-error { font-size: 3.5rem; }
+            .rank-stamp { font-size: 2.2rem; border-width: 3px; padding: 8px 15px; margin-bottom: 30px;}
+            .result-score { font-size: 3.8rem; }
+            .cta-btn { padding: 14px; font-size: 0.95rem; }
         }
     </style>
 </head>
 <body>
 
-    <div id="bgContainer">
-        <div class="bg-layer" id="bg1"></div>
-        <div class="bg-layer" id="bg2"></div>
-    </div>
-    <div class="scanlines"></div>
+    <div class="app-base-bg fade-target"></div>
+    <img src="" id="bgImage" class="bg-img fade-target" alt="Background">
 
     <a href="index.html" class="back-btn">⬅ ポータルへ戻る</a>
 
-    <div class="app-container">
-        <header>
-            <h1 class="game-title">時間管理能力テスト</h1>
-            <p class="game-desc">ジャスト10秒で停止させろ</p>
-        </header>
-
-        <div class="game-panel">
-            <div class="target-time">TARGET: 10.000s</div>
-            
-            <div class="timer-display">
-                <div class="time-text" id="timeDisplay">0.00</div>
-                <svg class="timer-svg" viewBox="0 0 300 300">
-                    <circle class="timer-circle-bg" cx="150" cy="150" r="130"></circle>
-                    <circle class="timer-circle-bar" id="progressBar" cx="150" cy="150" r="130"></circle>
-                </svg>
+    <div class="game-panel">
+        <div class="top-controls">
+            <div class="status-bar">
+                <div class="title-left">⏱️ 時間力測定</div>
+                <div id="r_msg" class="status-msg">測定開始を押してください</div>
             </div>
-
-            <div class="advice-text" id="adviceText">「START」を押すと計測開始。5秒後、表示が隠れます。感覚だけを頼りに10秒を目指してください。</div>
-
-            <button class="game-btn" id="actionBtn" onclick="handleAction()">START</button>
         </div>
-    </div>
 
-    <div id="resultOverlay">
-        <div class="result-title">誤差（10.000sからのずれ）</div>
-        <div class="result-time-diff" id="resultDiff">±0.000s</div>
-        <div class="actual-time" id="actualTimeText">実測値: 10.000s</div>
-        <div class="rank-stamp" id="q_rank_stamp">RANK: ---</div>
-        
-        <div class="btn-group">
-            <button class="cta-btn reset" onclick="resetGame()">もう一度チャレンジ</button>
-            <a href="index.html" class="cta-btn cta-btn-outline">📊 総合分析へ戻る</a>
+        <div class="play-area" id="touchArea">
+            <div id="warpScene" class="warp-scene"></div>
+            <div id="c_time" class="timer-display">0.000</div>
+            
+            <div id="calcUI" class="calc-ui">
+                <div id="calcStopped" class="calc-stopped">10.000s</div>
+                <div id="calcTarget" class="calc-target">- 10.000s</div>
+                <div class="calc-line"></div>
+                <div id="calcError" class="calc-error">+0.000s</div>
+            </div>
+            <div id="stopFlash" class="stop-flash"></div>
+        </div>
+
+        <button class="start-btn fade-target" id="c_start">測定開始</button>
+
+        <div class="result-overlay" id="c_result">
+            <div class="result-title">測定完了（誤差 ±sec）</div>
+            <div class="result-score" id="c_rscore">±0.000 <span>sec</span></div>
+            <div class="rank-stamp" id="r_rank_stamp">RANK A</div>
+            <div class="btn-group">
+                <button class="cta-btn cta-btn-outline" id="c_retry">もう一度プレイ</button>
+                <a href="index.html" class="cta-btn">📊 レーダーチャートを確認</a>
+            </div>
         </div>
     </div>
 
     <script>
-        // =========================================
-        // 🖼️ 背景クロスフェード・システム（移植）
-        // =========================================
-        const bgs = [document.getElementById('bg1'), document.getElementById('bg2')];
-        let currentBgIdx = 0;
-
-        function initAppBg() {
-            const randomNum = Math.floor(Math.random() * 200) + 1;
-            bgs[0].style.backgroundImage = `url('bg/bg (${randomNum}).webp')`;
-            bgs[0].style.opacity = 1; bgs[0].style.zIndex = 1;
-            bgs[1].style.opacity = 0; bgs[1].style.zIndex = 0;
-        }
-
-        function updateBg() {
-            const nextIdx = (currentBgIdx + 1) % 2;
-            const randomNum = Math.floor(Math.random() * 200) + 1;
-            const img = new Image();
-            img.src = `bg/bg (${randomNum}).webp`;
-            img.onload = () => {
-                bgs[nextIdx].style.backgroundImage = `url('${img.src}')`;
-                bgs[nextIdx].style.zIndex = 1; bgs[currentBgIdx].style.zIndex = 0;
-                bgs[nextIdx].style.opacity = 1; bgs[currentBgIdx].style.opacity = 0;
-                currentBgIdx = nextIdx;
-            };
-        }
-
-        initAppBg();
-        setInterval(updateBg, 4000);
-
-        // =========================================
-        // ⏱️ ゲームロジック
-        // =========================================
-        const timeDisplay = document.getElementById('timeDisplay');
-        const progressBar = document.getElementById('progressBar');
-        const actionBtn = document.getElementById('actionBtn');
-        const adviceText = document.getElementById('adviceText');
-        const resultOverlay = document.getElementById('resultOverlay');
-        const rankStamp = document.getElementById('q_rank_stamp');
-
-        let gameState = 'ready'; // ready, running
-        let startTime, timerId;
-        const TARGET_TIME = 10000; // ms
-        
-        // PC/MobileでSVGの円周を変える
-        const isMobile = window.innerWidth <= 768;
-        const radius = isMobile ? 130 : 130; // viewBoxを300固定にしたので、R130で統一
-        const circumference = 2 * Math.PI * radius; // 628 or 817
-
-        const ranks = [
-            {err: 0.05, n: ""S級 神"", c: "#10b981"}, 
-            {req: 8,  err: 0.15, n: "A級 達人", c: "#0ea5e9"}, 
-            {req: 6,  err: 0.30, n: "B級 プロ", c: "#8b5cf6"},
-            {req: 4,  err: 0.50, n: "C級 一般", c: "#f59e0b"}, 
-            {req: 0,  err: Infinity, n: "D級 素人", c: "#ef4444"}
-        ];
-
-        function handleAction() {
-            if (gameState === 'ready') {
-                startTimer();
-            } else if (gameState === 'running') {
-                stopTimer();
+        // Audio Engine
+        const Engine = {
+            ctx: null,
+            initAudio() {
+                if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+            },
+            playStart() { 
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.type = 'sine'; 
+                osc.frequency.setValueAtTime(200, this.ctx.currentTime); 
+                osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 1.0);
+                gain.gain.setValueAtTime(0.4, this.ctx.currentTime); 
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 1.0);
+                osc.start(); osc.stop(this.ctx.currentTime + 1.0);
+            },
+            playHide() { 
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.type = 'sine'; 
+                osc.frequency.setValueAtTime(600, this.ctx.currentTime); 
+                osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime); 
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+                osc.start(); osc.stop(this.ctx.currentTime + 0.3);
+            },
+            playStop() { 
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.type = 'sine'; 
+                osc.frequency.setValueAtTime(800, this.ctx.currentTime); 
+                osc.frequency.setValueAtTime(300, this.ctx.currentTime + 0.05);
+                gain.gain.setValueAtTime(0.6, this.ctx.currentTime); 
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+                osc.start(); osc.stop(this.ctx.currentTime + 0.1);
+            },
+            playCalc(type) {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.type = 'triangle';
+                if(type === 'step1') osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+                if(type === 'step2') osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+                if(type === 'step3') { osc.type='square'; osc.frequency.setValueAtTime(1200, this.ctx.currentTime); }
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime); 
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+                osc.start(); osc.stop(this.ctx.currentTime + 0.2);
             }
-        }
-
-        function startTimer() {
-            gameState = 'running';
-            actionBtn.innerText = 'STOP';
-            actionBtn.classList.add('stop');
-            adviceText.innerText = '集中してください。5秒後に表示が消えます。';
-            
-            startTime = Date.now();
-            progressBar.style.strokeDasharray = circumference;
-            
-            timerId = setInterval(updateDisplay, 10); // 10msごとに更新
-        }
-
-        function updateDisplay() {
-            const elapsed = Date.now() - startTime;
-            const seconds = (elapsed / 1000).toFixed(2);
-            timeDisplay.innerText = seconds;
-
-            // プログレスバーの更新 (10秒で一周)
-            const offset = circumference * (1 - Math.min(1, elapsed / TARGET_TIME));
-            progressBar.style.strokeDashoffset = offset;
-
-            // 👑 修正: 5秒後に表示を隠す、色を変える
-            if (elapsed >= 5000 && !timeDisplay.classList.contains('hidden')) {
-                timeDisplay.classList.add('hidden');
-                adviceText.innerText = '視覚情報をシャットダウン。感覚のみで10秒を刻め。';
-                progressBar.style.stroke = 'rgba(14, 165, 233, 0.2)'; // バーの色を薄く
-            }
-        }
-
-        function stopTimer() {
-            clearInterval(timerId);
-            gameState = 'finished';
-            const finishTime = Date.now() - startTime;
-            
-            actionBtn.style.display = 'none'; // ボタンを一時的に消す
-            timeDisplay.classList.remove('hidden'); // 時間を表示
-            progressBar.style.stroke = 'var(--accent-blue)'; // バーの色を戻す
-            
-            showResult(finishTime);
-        }
-
-        function showResult(finishTime) {
-            const actualSeconds = finishTime / 1000;
-            const error = Math.abs(10 - actualSeconds);
-            const score = Math.max(0, 100 - (error * 50)); // スコア計算 (誤差0.1sごとに5pt減)
-            
-            // 👑 修正: ローカルストレージに「誤差」として保存（小さいほうが良い）
-            const currentBestError = parseFloat(localStorage.getItem('b_tim') || 999.9);
-            if (error < currentBestError) localStorage.setItem('b_tim', error);
-
-            document.getElementById('actualTimeText').innerText = `実測値: ${actualSeconds.toFixed(3)}s`;
-            const sign = (actualSeconds >= 10) ? '+' : '-';
-            document.getElementById('resultDiff').innerText = `±${error.toFixed(3)}s`;
-
-            // ランク判定
-            let rank = ranks[ranks.length-1];
-            for(let r of ranks) { if(error <= r.err) { rank = r; break; } }
-
-            rankStamp.innerText = rank.n;
-            rankStamp.style.color = rank.c;
-            rankStamp.style.borderColor = rank.c;
-            rankStamp.style.textShadow = `0 0 20px ${rank.c}`;
-            
-            resultOverlay.classList.add('active');
-            
-            setTimeout(() => {
-                rankStamp.classList.add('drop');
-            }, 300);
-        }
-
-        function resetGame() {
-            resultOverlay.classList.remove('active');
-            rankStamp.classList.remove('drop');
-            actionBtn.style.display = 'block';
-            actionBtn.innerText = 'START';
-            actionBtn.classList.remove('stop');
-            adviceText.innerText = '「START」を押すと計測開始。5秒後、表示が隠れます。感覚だけを頼りに10秒を目指してください。';
-            timeDisplay.innerText = '0.00';
-            progressBar.style.strokeDashoffset = circumference;
-            progressBar.style.stroke = 'var(--accent-blue)';
-            gameState = 'ready';
-        }
-
-        // =========================================
-        // 👆 隠しコマンド：のぞき見機能 (移植)
-        // =========================================
-        const triggerPeek = (e) => {
-            // パネルや戻るボタンの上では発動させない
-            if (e.target.closest('.game-panel') || e.target.closest('.back-btn')) return;
-            document.body.classList.add('view-bg');
         };
-        const endPeek = () => document.body.classList.remove('view-bg');
 
-        window.addEventListener('touchstart', triggerPeek, { passive: true });
-        window.addEventListener('touchend', endPeek, { passive: true });
-        window.addEventListener('mousedown', triggerPeek);
-        window.addEventListener('mouseup', endPeek);
-        window.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); return false; };
+        // 時間力ゲームロジック
+        const TimeGame = {
+            target: 10.000,
+            hideAt: 3.000,
+            state: 'idle',
+            startTime: 0, 
+            hideTimeout: null,
+            gameInterval: null,
+            ranks: [
+                {req: 0.030, n: "S級 神", c: "#10b981"}, 
+                {req: 0.070, n: "A級 達人", c: "#0ea5e9"}, 
+                {req: 0.150, n: "B級 プロ", c: "#8b5cf6"},
+                {req: 0.300, n: "C級 一般", c: "#f59e0b"}, 
+                {req: 0.500, n: "D級 素人", c: "#ef4444"},
+                {req: 9.999,  n: "F級 不足", c: "#94a3b8"}
+            ],
+            els: { 
+                area: document.getElementById('touchArea'), msg: document.getElementById('r_msg'), 
+                timeDisplay: document.getElementById('c_time'), warpScene: document.getElementById('warpScene'),
+                stopFlash: document.getElementById('stopFlash'), bgImage: document.getElementById('bgImage'),
+                btn: document.getElementById('c_start'), over: document.getElementById('c_result'), 
+                fs: document.getElementById('c_rscore'), stamp: document.getElementById('r_rank_stamp'),
+                calcUI: document.getElementById('calcUI'), calcStopped: document.getElementById('calcStopped'),
+                calcTarget: document.getElementById('calcTarget'), calcError: document.getElementById('calcError')
+            },
+            
+            init() {
+                this.state = 'idle'; clearTimeout(this.hideTimeout); clearInterval(this.gameInterval);
+                document.body.classList.remove('is-blackout');
+                document.body.classList.remove('is-ended');
+                this.els.timeDisplay.textContent = "0.000";
+                this.els.timeDisplay.classList.remove('hidden'); 
+                this.els.msg.textContent = "測定開始を押してください";
+                this.els.msg.style.color = "var(--warning-color)";
+                this.els.msg.style.animation = "pulse 1s infinite alternate";
+                
+                const randomImgNum = Math.floor(Math.random() * 195) + 1;
+                this.els.bgImage.src = `bg/bg (${randomImgNum}).webp`;
+                this.els.warpScene.classList.remove('show');
+                this.els.calcUI.className = 'calc-ui';
 
+                const particles = this.els.warpScene.querySelectorAll('.warp-particle');
+                particles.forEach(p => { p.style.animationPlayState = 'paused'; });
+
+                this.els.over.classList.remove('show'); 
+                this.els.over.scrollTop = 0; 
+                this.els.stamp.classList.remove('drop');
+                this.els.btn.style.display = 'block';
+            },
+
+            createParticles() {
+                if (this.els.warpScene.children.length > 0) return; 
+                const numParticles = 80;
+                for (let i = 0; i < numParticles; i++) {
+                    const d = document.createElement('div');
+                    d.className = 'warp-particle';
+                    d.style.left = `${Math.random() * 100}%`;
+                    d.style.top = `${Math.random() * 100}%`;
+                    d.style.animationDelay = `${Math.random() * 3}s`;
+                    d.style.animationPlayState = 'paused'; 
+                    this.els.warpScene.appendChild(d);
+                }
+            },
+
+            start() {
+                Engine.initAudio();
+                this.state = 'playing';
+                this.els.btn.style.display = 'none';
+                this.els.msg.textContent = "10.000sジャストで止めろ！";
+                this.els.msg.style.color = "var(--accent-color)";
+                this.els.msg.style.animation = "none";
+                this.els.warpScene.classList.add('show');
+                const particles = this.els.warpScene.querySelectorAll('.warp-particle');
+                particles.forEach(p => { p.style.animationPlayState = 'running'; });
+                this.startTime = performance.now();
+                
+                this.gameInterval = setInterval(() => {
+                    const elapsed = (performance.now() - this.startTime) / 1000;
+                    this.els.timeDisplay.textContent = elapsed.toFixed(3);
+                }, 10);
+
+                this.hideTimeout = setTimeout(() => {
+                    if (this.state === 'playing') {
+                        this.els.timeDisplay.classList.add('hidden');
+                        Engine.playHide();
+                        document.body.classList.add('is-blackout');
+                    }
+                }, 3000);
+                Engine.playStart();
+            },
+
+            stop(e) {
+                if (this.state !== 'playing') return;
+                this.state = 'ended';
+                const finalTime = (performance.now() - this.startTime) / 1000;
+                clearInterval(this.gameInterval);
+                clearTimeout(this.hideTimeout);
+                Engine.playStop();
+                this.els.stopFlash.classList.add('show');
+                document.body.classList.remove('is-blackout');
+                document.body.classList.add('is-ended');
+                const particles = this.els.warpScene.querySelectorAll('.warp-particle');
+                particles.forEach(p => { p.style.animationPlayState = 'paused'; });
+                setTimeout(() => this.els.stopFlash.classList.remove('show'), 100);
+
+                const error = finalTime - this.target;
+                const errorAbs = Math.abs(error);
+                const sign = error > 0 ? "+" : (error < 0 ? "-" : "±");
+
+                this.els.calcStopped.textContent = finalTime.toFixed(3) + "s";
+                this.els.calcError.textContent = `${sign}${errorAbs.toFixed(3)}s`;
+
+                if (errorAbs <= 0.07) {
+                    this.els.calcError.style.color = "var(--success-color)";
+                    this.els.calcError.style.textShadow = "0 0 20px var(--success-glow)";
+                } else if (errorAbs <= 0.3) {
+                    this.els.calcError.style.color = "var(--accent-color)";
+                    this.els.calcError.style.textShadow = "0 0 20px var(--accent-glow)";
+                } else {
+                    this.els.calcError.style.color = "var(--danger-color)";
+                    this.els.calcError.style.textShadow = "0 0 20px var(--danger-glow)";
+                }
+
+                this.els.calcUI.classList.add('show-bg');
+                setTimeout(() => { this.els.calcUI.classList.add('step1'); Engine.playCalc('step1'); }, 400); 
+                setTimeout(() => { this.els.calcUI.classList.add('step2'); Engine.playCalc('step2'); }, 1200); 
+                setTimeout(() => { this.els.calcUI.classList.add('step3'); Engine.playCalc('step3'); }, 2000); 
+
+                let currentBest = localStorage.getItem('b_tim');
+                if (!currentBest || currentBest === "---" || errorAbs < parseFloat(currentBest)) {
+                    localStorage.setItem('b_tim', errorAbs.toFixed(3));
+                }
+
+                let rank = this.ranks[this.ranks.length-1];
+                for(let r of this.ranks) { if(errorAbs <= r.req) { rank = r; break; } }
+                this.els.fs.innerHTML = `±${errorAbs.toFixed(3)} <span>sec</span>`;
+                this.els.stamp.textContent = `RANK: ${rank.n}`;
+                this.els.stamp.style.color = rank.c;
+                this.els.stamp.style.borderColor = rank.c;
+                this.els.stamp.style.textShadow = `0 0 30px ${rank.c}`;
+
+                setTimeout(() => {
+                    this.els.calcUI.className = 'calc-ui'; 
+                    this.els.over.classList.add('show');
+                    setTimeout(() => {
+                        this.els.over.scrollTo({ top: this.els.over.scrollHeight / 2, behavior: 'smooth' });
+                    }, 200);
+                    setTimeout(() => {
+                        this.els.stamp.classList.add('drop');
+                    }, 300);
+                }, 3800);
+            }
+        };
+
+        let isTouching = false;
+        document.body.addEventListener('touchstart', e => { 
+            if(e.target.closest('.back-btn') || e.target.closest('.start-btn') || e.target.closest('.cta-btn')) return;
+            e.preventDefault(); isTouching = true; 
+            if(TimeGame.state === 'playing') TimeGame.stop(e); 
+        }, {passive: false});
+        
+        document.body.addEventListener('mousedown', e => { 
+            if(e.target.closest('.back-btn') || e.target.closest('.start-btn') || e.target.closest('.cta-btn')) return;
+            if(!isTouching && TimeGame.state === 'playing') TimeGame.stop(e); 
+        });
+        
+        TimeGame.els.btn.addEventListener('click', (e) => {
+            e.stopPropagation(); 
+            TimeGame.createParticles(); 
+            TimeGame.start();
+        });
+
+        document.getElementById('c_retry').addEventListener('click', () => {
+            TimeGame.init();
+        });
+
+        TimeGame.init();
     </script>
 </body>
 </html>

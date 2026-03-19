@@ -256,8 +256,8 @@
                 this.els.msg.className = 'reaction-msg waiting';
                 this.els.msg.textContent = "待機..(画像出現でタップ！)";
                 
-                // ★ 待機中に裏側で1〜200のランダム画像を読み込んでおく（表示遅延を防ぐため）
-                const randomImgNum = Math.floor(Math.random() * 200) + 1;
+                // ★ 待機中に裏側で1〜195のランダム画像を読み込んでおく（表示遅延を防ぐため）
+                const randomImgNum = Math.floor(Math.random() * 195) + 1;
                 this.els.img.src = `bg/bg (${randomImgNum}).webp`;
 
                 // 1.5秒 〜 4.5秒のランダムなタイミングで発動

@@ -192,7 +192,7 @@
 
     <div class="app-container">
         <div class="progress-header">
-            <span class="quiz-main-title">ビジネス知識力試験</span>
+            <span class="quiz-main-title">🧠 ビジネス知識力試験</span>
             <span id="progressText">Q. 1 / 10</span>
         </div>
         <div class="progress-bar-bg"><div class="progress-fill" id="progressFill"></div></div>
@@ -207,7 +207,7 @@
         let currentBgIdx = 0;
 
         function initAppBg() {
-            const randomNum = Math.floor(Math.random() * 200) + 1;
+            const randomNum = Math.floor(Math.random() * 195) + 1;
             bgs[0].style.backgroundImage = `url('bg/bg (${randomNum}).webp')`;
             bgs[0].style.opacity = 1;
             bgs[0].style.zIndex = 1;
@@ -217,7 +217,7 @@
 
         function updateBg() {
             const nextIdx = (currentBgIdx + 1) % 2;
-            const randomNum = Math.floor(Math.random() * 200) + 1;
+            const randomNum = Math.floor(Math.random() * 195) + 1;
             const img = new Image();
             img.src = `bg/bg (${randomNum}).webp`;
             img.onload = () => {
