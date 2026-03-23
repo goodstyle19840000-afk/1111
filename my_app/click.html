@@ -278,8 +278,9 @@
                 this.els.hp.style.width = `${Math.max(0, (this.maxHp - this.score) / this.maxHp * 100)}%`;
                 
                 const d = document.createElement('div'); d.textContent = "HIT!"; d.className = 'floating-damage';
-                let x = e.clientX || (e.touches && e.touches[0].clientX) || window.innerWidth/2; 
-                let y = e.clientY || (e.touches && e.touches[0].clientY) || window.innerHeight/2;
+                // キーボード入力の場合は画面中央にダメージテキストを表示
+                let x = (e && e.clientX) || (e && e.touches && e.touches[0].clientX) || window.innerWidth/2; 
+                let y = (e && e.clientY) || (e && e.touches && e.touches[0].clientY) || window.innerHeight/2;
                 const rect = this.els.t.getBoundingClientRect();
                 d.style.left = `${x - rect.left - 30 + (Math.random()-0.5)*60}px`; 
                 d.style.top = `${y - rect.top - 40}px`;
@@ -361,6 +362,23 @@
         document.getElementById('c_retry').addEventListener('click', () => {
             ClickGame.init();
             ClickGame.els.btn.style.display = 'block';
+        });
+
+        // =========================================
+        // ⌨️ PC版救済：キーボード全キーHIT判定化（ピアノ打ち解放）
+        // =========================================
+        document.addEventListener('keydown', (e) => {
+            // 押しっぱなしによるOSの自動連打チートを完全に無効化
+            if (e.repeat) return;
+
+            // ゲームプレイ中のみ、スペースやエンターキー等のスクロール・誤動作を防ぐ
+            if (ClickGame.state === 'playing') {
+                if (e.code === 'Space' || e.key === ' ' || e.code === 'Enter' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    e.preventDefault();
+                }
+                // どのキーを押してもHITとして処理する
+                ClickGame.hit(e);
+            }
         });
 
         ClickGame.init();

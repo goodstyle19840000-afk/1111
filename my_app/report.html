@@ -23,17 +23,27 @@
         
         .scanlines { position: fixed; inset: 0; z-index: -1; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%); background-size: 100% 4px; pointer-events: none; }
 
-        .container { width: 100%; max-width: 850px; display: flex; flex-direction: column; gap: 20px; }
+        .container { width: 100%; max-width: 850px; display: flex; flex-direction: column; gap: 20px; padding-bottom: 40px; }
 
-        .header { text-align: center; padding: 20px 0; }
+        .header { text-align: center; padding: 20px 0 10px; }
         .header h1 { font-size: 1.4rem; letter-spacing: 6px; color: var(--accent); text-shadow: 0 0 15px var(--accent-glow); }
         .back-btn { display: inline-block; margin-top: 10px; color: var(--text-dim); text-decoration: none; font-size: 0.8rem; transition: 0.3s; }
         .back-btn:hover { color: #fff; }
 
         .report-card { background: var(--glass); border: 1px solid var(--border); border-radius: 28px; padding: 35px; backdrop-filter: blur(15px); box-shadow: 0 20px 50px rgba(0,0,0,0.6); position: relative; }
         
-        .type-badge { display: inline-block; background: var(--accent); color: #000; padding: 5px 15px; border-radius: 4px; font-weight: 900; font-size: 0.8rem; margin-bottom: 12px; }
-        .type-name { font-size: 2.2rem; font-weight: bold; margin-bottom: 20px; letter-spacing: -1px; display: flex; align-items: center; gap: 15px; }
+        /* 💳 ステータスカード (ID Card) */
+        .id-card { background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(2, 6, 23, 0.9)); border: 1px solid var(--accent); border-radius: 16px; padding: 20px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 0 20px rgba(14, 165, 233, 0.2); position: relative; overflow: hidden; display: flex; gap: 20px; align-items: center; }
+        .id-card::before { content: 'CORE IDENTIFICATION'; position: absolute; top: 0; left: 0; width: 100%; background: var(--accent); color: #000; font-size: 0.65rem; font-weight: 900; letter-spacing: 4px; padding: 3px 15px; }
+        .id-card-icon { font-size: 4.5rem; filter: drop-shadow(0 0 15px var(--accent-glow)); flex-shrink: 0; padding-top: 15px; }
+        .id-card-info { flex: 1; padding-top: 15px; }
+        .id-card-class { font-size: 1.8rem; font-weight: 900; color: #fff; letter-spacing: 1px; margin-bottom: 5px; line-height: 1.1; }
+        .id-card-sub { font-size: 0.8rem; color: var(--accent); font-weight: bold; letter-spacing: 1px; margin-bottom: 12px; }
+        .id-card-stats { display: flex; gap: 15px; }
+        .id-stat-box { background: rgba(0,0,0,0.5); border: 1px solid var(--border); padding: 8px 12px; border-radius: 8px; flex: 1; text-align: center; }
+        .id-stat-label { font-size: 0.65rem; color: var(--text-dim); margin-bottom: 3px; }
+        .id-stat-val { font-size: 1.3rem; font-weight: bold; color: #fff; font-variant-numeric: tabular-nums; }
+        .id-card-hash { position: absolute; bottom: 8px; right: 15px; font-family: monospace; font-size: 0.7rem; color: var(--text-dim); opacity: 0.5; }
 
         .section-title { font-size: 0.9rem; color: var(--accent); font-weight: bold; margin: 35px 0 15px; display: flex; align-items: center; gap: 10px; border-left: 4px solid var(--accent); padding-left: 12px; }
 
@@ -45,24 +55,45 @@
         .trait-item { background: rgba(255,255,255,0.03); padding: 22px; border-radius: 16px; border: 1px solid var(--border); position: relative; }
         .trait-label { font-size: 0.85rem; font-weight: bold; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
         .trait-text { font-size: 0.95rem; line-height: 1.6; color: var(--text-main); }
-        
         .label-pros { color: var(--success); }
         .label-cons { color: var(--danger); }
 
-        /* 数値分析 */
-        .stat-bar-container { margin-bottom: 18px; }
+        /* 数値分析 (ツールチップ付き) */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 30px; }
+        .stat-bar-container { margin-bottom: 18px; position: relative; cursor: help; }
         .stat-info { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-dim); align-items: center; }
         .stat-icon { margin-right: 8px; font-size: 1.1rem; }
         .stat-bar-bg { width: 100%; height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); }
         .stat-bar-fill { height: 100%; background: var(--accent); box-shadow: 0 0 15px var(--accent-glow); transition: width 1.8s cubic-bezier(0.19, 1, 0.22, 1); width: 0; }
 
+        .tooltip { position: absolute; bottom: 100%; left: 0; transform: translateY(10px); background: rgba(15, 23, 42, 0.95); border: 1px solid var(--accent); color: var(--text-main); padding: 8px 12px; border-radius: 8px; font-size: 0.75rem; white-space: nowrap; opacity: 0; pointer-events: none; transition: all 0.2s; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.5); margin-bottom: 8px; font-weight: normal; }
+        .tooltip::after { content: ''; position: absolute; top: 100%; left: 15px; border-width: 5px; border-style: solid; border-color: var(--accent) transparent transparent transparent; }
+        .stat-bar-container:hover .tooltip, .stat-bar-container:active .tooltip { opacity: 1; transform: translateY(0); }
+
+        /* 🤝 相性分析ボックス */
+        .partner-box { background: linear-gradient(to right, rgba(245, 158, 11, 0.1), transparent); border: 1px solid rgba(245, 158, 11, 0.3); padding: 25px; border-radius: 16px; position: relative; }
+        .partner-box::before { content: '🤝 SYNERGY PARTNER'; position: absolute; top: -10px; left: 20px; background: var(--bg-dark); padding: 0 10px; font-size: 0.7rem; font-weight: bold; color: var(--warning); border-radius: 10px; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .partner-header { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+        .partner-icon { font-size: 2.5rem; filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.5)); }
+        .partner-title { font-size: 1.2rem; font-weight: bold; color: #fff; }
+        .partner-sub { font-size: 0.8rem; color: var(--warning); font-weight: bold; }
+        .partner-text { font-size: 0.95rem; line-height: 1.7; color: var(--text-dim); }
+        .partner-text strong { color: var(--warning); }
+
+        /* アドバイスボックス */
         .advice-box { background: rgba(14, 165, 233, 0.05); padding: 25px; border-radius: 18px; font-size: 0.95rem; line-height: 1.8; color: var(--text-main); border: 1px dashed var(--accent-glow); position: relative; }
-        .advice-box::before { content: '💡 ADVICE'; position: absolute; top: -10px; left: 20px; background: var(--bg-dark); padding: 0 10px; font-size: 0.7rem; font-weight: bold; color: var(--accent); }
+        .advice-box::before { content: '💡 DEEP ADVICE'; position: absolute; top: -10px; left: 20px; background: var(--bg-dark); padding: 0 10px; font-size: 0.7rem; font-weight: bold; color: var(--accent); }
+        .synergy-text { margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(14, 165, 233, 0.3); color: var(--accent); font-weight: bold; }
 
+        /* キャリアタグ */
         .tag { background:rgba(255,255,255,0.05); border:1px solid var(--border); padding:10px 18px; border-radius:50px; font-size:0.85rem; display: flex; align-items: center; gap: 8px; transition: 0.3s; }
-        .tag:hover { background: rgba(14, 165, 233, 0.1); border-color: var(--accent); }
+        .tag:hover { background: rgba(14, 165, 233, 0.1); border-color: var(--accent); transform: translateY(-2px); }
 
-        @media (max-width: 600px) { .trait-grid { grid-template-columns: 1fr; } .type-name { font-size: 1.8rem; } }
+        @media (max-width: 768px) { 
+            .trait-grid, .stats-grid { grid-template-columns: 1fr; } 
+            .id-card { flex-direction: column; text-align: center; gap: 10px; padding-top: 30px; }
+            .id-card-icon { padding-top: 0; }
+        }
     </style>
 </head>
 <body>
@@ -77,14 +108,35 @@
 
         <div class="report-card">
             <div id="reportContent">
+                
+                <div class="id-card" id="idCard">
+                    <div class="id-card-icon" id="cardIcon">🧬</div>
+                    <div class="id-card-info">
+                        <div class="id-card-class" id="cardClass">未解析</div>
+                        <div class="id-card-sub" id="cardSub">DOMINANT PROFILE</div>
+                        <div class="id-card-stats">
+                            <div class="id-stat-box">
+                                <div class="id-stat-label">TOTAL SCORE</div>
+                                <div class="id-stat-val" id="cardScore">000</div>
+                            </div>
+                            <div class="id-stat-box">
+                                <div class="id-stat-label">ASSIGNED RANK</div>
+                                <div class="id-stat-val" id="cardRank" style="color: var(--accent);">--</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="id-card-hash" id="cardHash">ID: 0x000000</div>
+                </div>
+
                 <div class="type-badge" id="classLabel">ANALYZING...</div>
+                
                 <h2 class="type-name">
                     <span id="typeIcon">🧬</span>
                     <span id="className">プロファイル生成中</span>
                 </h2>
-                
+
                 <p class="description" id="classDesc">
-                    全セクターのデータを統合し、あなたの認知特性と潜在的な性格傾向を抽出しています。
+                    バックグラウンドデータの解析中...
                 </p>
 
                 <div class="trait-grid">
@@ -98,26 +150,65 @@
                     </div>
                 </div>
 
-                <div class="section-title">ポテンシャル推計</div>
-                <div class="stat-bar-container">
-                    <div class="stat-info"><span><span class="stat-icon">⚖️</span>意思決定の正確性</span><span id="val_accuracy">0%</span></div>
-                    <div class="stat-bar-bg"><div class="stat-bar-fill" id="bar_accuracy"></div></div>
-                </div>
-                <div class="stat-bar-container">
-                    <div class="stat-info"><span><span class="stat-icon">🔋</span>ストレス耐性</span><span id="val_stress">0%</span></div>
-                    <div class="stat-bar-bg"><div class="stat-bar-fill" id="bar_stress"></div></div>
-                </div>
-                <div class="stat-bar-container">
-                    <div class="stat-info"><span><span class="stat-icon">🔀</span>並列処理能力</span><span id="val_multi">0%</span></div>
-                    <div class="stat-bar-bg"><div class="stat-bar-fill" id="bar_multi"></div></div>
+                <div class="section-title">ポテンシャル推計（多角解析）</div>
+                <div class="stats-grid">
+                    <div>
+                        <div class="stat-bar-container">
+                            <div class="tooltip">算出根拠: 知識(40%) + 論理(40%) + 観察(20%)</div>
+                            <div class="stat-info"><span><span class="stat-icon">⚖️</span>意思決定の正確性</span><span id="val_accuracy">0%</span></div>
+                            <div class="stat-bar-bg"><div class="stat-bar-fill" id="bar_accuracy"></div></div>
+                        </div>
+                        <div class="stat-bar-container">
+                            <div class="tooltip">算出根拠: 処理(60%) + 観察(40%)</div>
+                            <div class="stat-info"><span><span class="stat-icon">🔀</span>並列処理能力</span><span id="val_multi">0%</span></div>
+                            <div class="stat-bar-bg"><div class="stat-bar-fill" id="bar_multi"></div></div>
+                        </div>
+                        <div class="stat-bar-container">
+                            <div class="tooltip">算出根拠: 総獲得AP (MAX 5000APを基準)</div>
+                            <div class="stat-info"><span><span class="stat-icon">🔋</span>精神的持久力</span><span id="val_stamina">0%</span></div>
+                            <div class="stat-bar-bg"><div class="stat-bar-fill" id="bar_stamina"></div></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="stat-bar-container">
+                            <div class="tooltip">算出根拠: 知識(50%) + 観察(50%)</div>
+                            <div class="stat-info"><span><span class="stat-icon">🔍</span>情報収集・分析力</span><span id="val_analysis">0%</span></div>
+                            <div class="stat-bar-bg"><div class="stat-bar-fill" id="bar_analysis"></div></div>
+                        </div>
+                        <div class="stat-bar-container">
+                            <div class="tooltip">算出根拠: 時間知覚(50%) + 覚醒反応(50%)</div>
+                            <div class="stat-info"><span><span class="stat-icon">🛡️</span>ストレス耐性</span><span id="val_stress">0%</span></div>
+                            <div class="stat-bar-bg"><div class="stat-bar-fill" id="bar_stress"></div></div>
+                        </div>
+                        <div class="stat-bar-container">
+                            <div class="tooltip">算出根拠: 覚醒反応(50%) + 論理(50%)</div>
+                            <div class="stat-info"><span><span class="stat-icon">🌍</span>環境適応力</span><span id="val_adapt">0%</span></div>
+                            <div class="stat-bar-bg"><div class="stat-bar-fill" id="bar_adapt"></div></div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="section-title">今後のための提言</div>
-                <div class="advice-box" id="adviceBox">
-                    データを蓄積することで、より具体的な改善アドバイスが生成されます。
+                <div class="section-title">総合的な提言 ＆ シナジー解析</div>
+                <div class="advice-box">
+                    <span id="adviceBox">データを蓄積することで、より具体的な改善アドバイスが生成されます。</span>
+                    <div class="synergy-text" id="synergyBox"></div>
                 </div>
 
-                <div class="section-title">推奨キャリアパス</div>
+                <div class="section-title">チームビルディング・相性分析</div>
+                <div class="partner-box" id="partnerBox">
+                    <div class="partner-header">
+                        <div class="partner-icon" id="partnerIcon">👤</div>
+                        <div>
+                            <div class="partner-sub">最高の相乗効果（シナジー）を生む人材</div>
+                            <div class="partner-title" id="partnerName">解析中...</div>
+                        </div>
+                    </div>
+                    <div class="partner-text" id="partnerDesc">
+                        ---
+                    </div>
+                </div>
+
+                <div class="section-title">適性キャリアパス</div>
                 <div id="positionTags" style="display:flex; flex-wrap:wrap; gap:10px; margin-top: 10px;">
                     </div>
             </div>
@@ -125,107 +216,207 @@
     </div>
 
     <script>
-        const getS = (k, d=0) => localStorage.getItem(k) || d;
-        const scores = {
-            quiz: parseInt(getS('b_quiz')) * 10,
-            click: Math.min(100, (parseInt(getS('b_clk')) / 120) * 100),
-            react: getS('b_rea') == 0 ? 0 : Math.max(0, Math.min(100, (0.40 - parseFloat(getS('b_rea'))) / (0.40 - 0.15) * 100)),
-            time: getS('b_tim') == 0 ? 0 : Math.max(0, Math.min(100, (1.0 - parseFloat(getS('b_tim'))) / 1.0 * 100)),
-            obs: Math.min(100, (parseInt(getS('b_obs')) / 40) * 100),
-            log: Math.min(100, (parseInt(getS('b_log')) / 40) * 100)
-        };
-
-        const sorted = Object.entries(scores).sort((a,b) => b[1] - a[1]);
-        const top1 = sorted[0];
-        const top2 = sorted[1];
-
-        const detailedAnalysis = {
-            quiz: {
-                name: "アーキビスト", icon: "📚",
-                pros: "膨大なデータベースを脳内に構築しており、過去の事例や知識に基づいた**「最も手堅い正解」**を導き出すのが得意です。",
-                cons: "前例のない未知のトラブルや、直感的なスピードが求められる場面では、情報の精査に時間をかけすぎてしまう傾向があります。",
-                advice: "「完璧な知識」を待つのではなく、手持ちの情報だけで60点の回答を出すスピード感を意識すると、さらに飛躍できます。",
-                tags: ["📜 歴史編纂者", "💼 弁理士", "🤖 AI学習監修"]
-            },
-            click: {
-                name: "アクセラレーター", icon: "🚀",
-                pros: "圧倒的な実行力。目の前のタスクを機械的な正確さで処理し続けることができ、**「泥臭い完遂」**において組織の要となります。",
-                cons: "「なぜこれをするのか」という大局的な視点が疎かになりやすく、ルーチン化できない複雑な抽象概念の処理を苦手とします。",
-                advice: "作業の合間に5分だけ「全体の地図」を見る時間を作りましょう。その速度に戦略が加われば無敵です。",
-                tags: ["🏭 生産管理", "⚔️ 執行役員", "💉 外科医"]
-            },
-            react: {
-                name: "ニューラル・センサー", icon: "⚡",
-                pros: "反射神経と危機察知能力。違和感に即座に反応し、**「手遅れになる前に手を打つ」**瞬発力は、現場の守護神と言えます。",
-                cons: "常に神経を張っているため消耗が激しく、長期的なスパンでじっくりと計画を練り、育てるような忍耐が必要な作業はストレスになります。",
-                advice: "オンとオフの切り替えを物理的に強制してください。高い覚醒度は、深い休息があってこそ維持されます。",
-                tags: ["🚨 危機管理監", "✈️ パイロット", "💹 ディーラー"]
-            },
-            time: {
-                name: "タイム・キーパー", icon: "⏱️",
-                pros: "驚異的な自己規律。外的要因に左右されない強固な内的リズムを持ち、**「締め切りや約束を絶対に守る」**という絶大な信頼を勝ち取ります。",
-                cons: "予測不能なスケジュールの変更や、ルーズな他者との協働において強いストレスを感じ、柔軟性を欠いてしまうことがあります。",
-                advice: "「あえて予定を決めない日」を作り、カオスな状況を楽しむ訓練をすると、あなたの精密さはさらに輝きます。",
-                tags: ["🎼 指揮者", "⌚ 精密時計職人", "📡 管制官"]
-            },
-            obs: {
-                name: "ゴースト・アイ", icon: "👁️",
-                pros: "微細な差異を見抜く「神の視点」。他の人が見落とす致命的なミスや、成功の鍵となる小さな予兆を**「直感的」**に捉えることができます。",
-                cons: "細部にこだわりすぎて、プロジェクトの全体進捗を遅らせてしまったり、他人の小さなミスを指摘しすぎてしまう傾向があります。",
-                advice: "「見逃しても死なないミス」を許容する練習をしましょう。あなたの視力は、重要な場面のために温存すべきです。",
-                tags: ["🎨 美術鑑定士", "🐛 デバッグ専門官", "⚖️ 検察官"]
-            },
-            log: {
-                name: "ロジック・プロセッサ", icon: "🧠",
-                pros: "構造的思考の達人。複雑に絡み合った問題を論理の糸で解きほぐし、**「誰もが納得する仕組み」**を作り上げる設計能力に長けています。",
-                cons: "感情的な側面や、理屈では説明できない「人の心」の機微を計算から除外してしまい、正論で周囲を凍りつかせることがあります。",
-                advice: "論理は「武器」ではなく「地図」です。人を動かすには、正しい理屈以上に、共感というガソリンが必要なことを忘れないでください。",
-                tags: ["🏢 CTO / 設計者", "🔭 理論物理学者", "♟️ 戦略家"]
-            }
-        };
-
+        // 👑 すべての処理を画面ロード後に実行し、フリーズを完全回避
         window.onload = () => {
-            const mainType = top1[0];
-            const subType = top2[0];
-            
-            if (mainType === 'none' || top1[1] === 0) {
-                document.getElementById('className').innerText = "未解析の被検体";
-                return;
+            try {
+                // 安全なデータ取得関数
+                const getRaw = (key, isFloat = false) => {
+                    const val = localStorage.getItem(key);
+                    if (val === null || val === "") return 0; // nullではなく0を返すことでエラーを防ぐ
+                    const num = isFloat ? parseFloat(val) : parseInt(val, 10);
+                    return isNaN(num) ? 0 : num;
+                };
+
+                const rawScores = {
+                    quiz: getRaw('b_quiz'),
+                    click: getRaw('b_clk'),
+                    react: getRaw('b_rea', true),
+                    time: getRaw('b_tim', true),
+                    obs: getRaw('b_obs'),
+                    log: getRaw('b_log')
+                };
+
+                // スコア計算（どんな値でも最低1点を保証してバグを防ぐ）
+                const calcScore = (val, type) => {
+                    if (val <= 0) return 0;
+                    let s = 0;
+                    if (type === 'quiz') s = val * 10;
+                    else if (type === 'click') s = (val / 120) * 100;
+                    else if (type === 'react') s = val > 0.45 ? 5 : ((0.45 - val) / (0.45 - 0.15) * 100);
+                    else if (type === 'time') s = val > 1.0 ? 5 : ((1.0 - val) / 1.0 * 100);
+                    else if (type === 'obs') s = (val / 40) * 100;
+                    else if (type === 'log') s = (val / 40) * 100;
+                    return Math.max(1, Math.min(100, s)); 
+                };
+
+                const scores = {
+                    quiz: calcScore(rawScores.quiz, 'quiz'),
+                    click: calcScore(rawScores.click, 'click'),
+                    react: calcScore(rawScores.react, 'react'),
+                    time: calcScore(rawScores.time, 'time'),
+                    obs: calcScore(rawScores.obs, 'obs'),
+                    log: calcScore(rawScores.log, 'log')
+                };
+
+                const totalScore = Math.floor(Object.values(scores).reduce((a,b)=>a+b, 0));
+                
+                // 👑 まだ1回もゲームを遊んでいない場合の処理
+                if (totalScore === 0) {
+                    document.getElementById('classLabel').innerText = "NO DATA";
+                    document.getElementById('className').innerText = "未解析の被検体";
+                    document.getElementById('classDesc').innerText = "まだ十分なテストデータが蓄積されていません。ポータル画面から各測定を実行してください。";
+                    document.getElementById('idCard').style.display = 'none';
+                    document.getElementById('partnerBox').style.display = 'none';
+                    return;
+                }
+
+                // ランキング判定
+                let rankStr = "D"; let rankColor = "#ef4444";
+                if(totalScore >= 500) { rankStr = "S"; rankColor = "#10b981"; }
+                else if(totalScore >= 400) { rankStr = "A"; rankColor = "#0ea5e9"; }
+                else if(totalScore >= 300) { rankStr = "B"; rankColor = "#8b5cf6"; }
+                else if(totalScore >= 150) { rankStr = "C"; rankColor = "#f59e0b"; }
+
+                const currentAp = getRaw('core_ap') || 0;
+                const spentAp = getRaw('spent_ap') || 0;
+                const totalEarnedAp = currentAp + spentAp;
+
+                const sorted = Object.entries(scores).sort((a,b) => b[1] - a[1]);
+                const mainType = sorted[0][0];
+                const subType = sorted[1][0];
+
+                const detailedAnalysis = {
+                    quiz: {
+                        name: "アーキビスト", icon: "📚",
+                        pros: "膨大なデータベースを脳内に構築しており、過去の事例や知識に基づいた**「最も手堅い正解」**を導き出すのが得意です。",
+                        cons: "前例のない未知のトラブルや、直感的なスピードが求められる場面では、情報の精査に時間をかけすぎてしまう傾向があります。",
+                        advice: "「完璧な知識」を待つのではなく、手持ちの情報だけで60点の回答を出すスピード感を意識すると、さらに飛躍できます。",
+                        tags: ["📜 歴史編纂者", "💼 弁理士", "🤖 AI学習監修", "🧠 シニア・リサーチャー"],
+                        partner: { name: "アクセラレーター (情報処理特化)", icon: "🚀", desc: "あなたが構築した完璧な理論を、迷うことなく圧倒的な速度で現実のタスクに落とし込んでくれる**「最強の実行部隊」**です。知識と行動の完全分業が成立します。" }
+                    },
+                    click: {
+                        name: "アクセラレーター", icon: "🚀",
+                        pros: "圧倒的な実行力。目の前のタスクを機械的な正確さで処理し続けることができ、**「泥臭い完遂」**において組織の要となります。",
+                        cons: "「なぜこれをするのか」という大局的な視点が疎かになりやすく、ルーチン化できない複雑な抽象概念の処理を苦手とします。",
+                        advice: "作業の合間に5分だけ「全体の地図」を見る時間を作りましょう。その速度に戦略が加われば無敵です。",
+                        tags: ["🏭 生産管理", "⚔️ 執行役員", "💉 外科医", "💻 高頻度トレーダー"],
+                        partner: { name: "ロジック・プロセッサ (論理処理特化)", icon: "🧠", desc: "あなたが最速で走り抜けるための「正しいレール」を敷いてくれる**「最高の設計者」**です。彼らの戦略とあなたの実行力が組み合わされば、プロジェクトは最速で完了します。" }
+                    },
+                    react: {
+                        name: "ニューラル・センサー", icon: "⚡",
+                        pros: "反射神経と危機察知能力。違和感に即座に反応し、**「手遅れになる前に手を打つ」**瞬発力は、現場の守護神と言えます。",
+                        cons: "常に神経を張っているため消耗が激しく、長期的なスパンでじっくりと計画を練り、育てるような忍耐が必要な作業はストレスになります。",
+                        advice: "オンとオフの切り替えを物理的に強制してください。高い覚醒度は、深い休息があってこそ維持されます。",
+                        tags: ["🚨 危機管理監", "✈️ パイロット", "💹 ディーラー", "🚒 レスキュー指揮官"],
+                        partner: { name: "タイム・キーパー (時間知覚特化)", icon: "⏱️", desc: "あなたが最前線で変化に対応している間、揺るぎない内的リズムで**「チーム全体のペースとスケジュール」**を守り抜いてくれる絶対的な安心感をもたらします。" }
+                    },
+                    time: {
+                        name: "タイム・キーパー", icon: "⏱️",
+                        pros: "驚異的な自己規律。外的要因に左右されない強固な内的リズムを持ち、**「締め切りや約束を絶対に守る」**という絶大な信頼を勝ち取ります。",
+                        cons: "予測不能なスケジュールの変更や、ルーズな他者との協働において強いストレスを感じ、柔軟性を欠いてしまうことがあります。",
+                        advice: "「あえて予定を決めない日」を作り、カオスな状況を楽しむ訓練をすると、あなたの精密さはさらに輝きます。",
+                        tags: ["🎼 指揮者", "⌚ 精密時計職人", "📡 管制官", "🔬 法医学アナリスト"],
+                        partner: { name: "ニューラル・センサー (覚醒反応特化)", icon: "⚡", desc: "あなたが計画通りに進める中で発生する「突発的なエラーや仕様変更」を、**神速の瞬発力で全て捌いてくれる**ため、あなたは計画の完遂にのみ集中できます。" }
+                    },
+                    obs: {
+                        name: "ゴースト・アイ", icon: "👁️",
+                        pros: "微細な差異を見抜く「神の視点」。他の人が見落とす致命的なミスや、成功の鍵となる小さな予兆を**「直感的」**に捉えることができます。",
+                        cons: "細部にこだわりすぎて、プロジェクトの全体進捗を遅らせてしまったり、他人の小さなミスを指摘しすぎてしまう傾向があります。",
+                        advice: "「見逃しても死なないミス」を許容する練習をしましょう。あなたの視力は、重要な場面のために温存すべきです。",
+                        tags: ["🎨 美術鑑定士", "🐛 デバッグ専門官", "⚖️ 検察官", "🕵️ 監査インスペクター"],
+                        partner: { name: "アーキビスト (知識力特化)", icon: "📚", desc: "あなたが見つけた「微小な違和感」が、過去の事例に照らし合わせて**「本当に致命的なバグなのか」を瞬時に判定**してくれるため、無駄な指摘が減り精度が極まります。" }
+                    },
+                    log: {
+                        name: "ロジック・プロセッサ", icon: "🧠",
+                        pros: "構造的思考の達人。複雑に絡み合った問題を論理の糸で解きほぐし、**「誰もが納得する仕組み」**を作り上げる設計能力に長けています。",
+                        cons: "感情的な側面や、理屈では説明できない「人の心」の機微を計算から除外してしまい、正論で周囲を凍りつかせることがあります。",
+                        advice: "論理は「武器」ではなく「地図」です。人を動かすには、正しい理屈以上に、共感というガソリンが必要なことを忘れないでください。",
+                        tags: ["🏢 CTO / 設計者", "🔭 理論物理学者", "♟️ 戦略家", "🧩 アルゴリズム開発者"],
+                        partner: { name: "ゴースト・アイ (異常検知特化)", icon: "👁️", desc: "あなたが組み上げた完璧な論理（システム）に潜む**「計算外の小さな穴」をテスト段階で確実に見つけ出してくれる**ため、リリース前にバグなき完全設計が実現します。" }
+                    }
+                };
+
+                const synergyTexts = {
+                    quiz: "「広範な知識」が裏付けとして機能し、より説得力のあるブレないアウトプットが可能です。",
+                    click: "「高い実務処理速度」が加わり、思考の質だけでなく圧倒的な『量』でも他者を凌駕できるでしょう。",
+                    react: "「瞬時の状況判断力」が組み合わさることで、変化の激しい予測不能な状況下でも100%の能力を発揮できます。",
+                    time: "「正確な内的リズム」がブレを抑え、いかなるプレッシャー下でもマイペースに再現性の高い成果を出せます。",
+                    obs: "「微細な観察眼」が加わり、大枠だけでなく見落とされがちな致命的エラーを事前に防ぐ完璧な仕事が可能です。",
+                    log: "「論理的思考力」が掛け合わさり、直感的なひらめきを理論的にも証明できる強固な分析基盤を持っています。"
+                };
+
+                const data = detailedAnalysis[mainType];
+
+                // 1. 💳 ステータスカード (ID Card)
+                document.getElementById('cardIcon').innerText = data.icon;
+                document.getElementById('cardClass').innerText = data.name;
+                document.getElementById('cardSub').innerText = `${mainType.toUpperCase()} x ${subType.toUpperCase()}`;
+                document.getElementById('cardScore').innerText = totalScore.toString().padStart(3, '0');
+                document.getElementById('cardRank').innerText = `RANK ${rankStr}`;
+                document.getElementById('cardRank').style.color = rankColor;
+                
+                const hash = "0x" + (totalScore * 1337).toString(16).toUpperCase().padStart(6, '0');
+                document.getElementById('cardHash').innerText = `ID: ${hash}`;
+
+                // 2. 基本情報と分析テキスト
+                document.getElementById('typeIcon').innerText = data.icon;
+                document.getElementById('className').innerText = data.name;
+                document.getElementById('classLabel').innerText = `MAIN: ${mainType.toUpperCase()} / SUB: ${subType.toUpperCase()}`;
+                document.getElementById('classDesc').innerText = `全セクターの測定値とバックグラウンド稼働データを統合し、あなたの潜在特性を抽出しました。`;
+                
+                document.getElementById('prosText').innerHTML = data.pros;
+                document.getElementById('consText').innerHTML = data.cons;
+                document.getElementById('adviceBox').innerHTML = data.advice;
+
+                if(scores[subType] > 0) {
+                    document.getElementById('synergyBox').innerHTML = `🤝 <strong>【サブ特性のシナジー】</strong><br>さらに、あなたの第2特性である「${detailedAnalysis[subType].name}」の能力が融合することで、${synergyTexts[subType]}`;
+                } else {
+                    document.getElementById('synergyBox').style.display = 'none';
+                }
+
+                // 3. 🤝 相性分析ボックス
+                document.getElementById('partnerIcon').innerText = data.partner.icon;
+                document.getElementById('partnerName').innerText = data.partner.name;
+                document.getElementById('partnerDesc').innerHTML = data.partner.desc;
+
+                // 4. 6項目の推計数値計算
+                const acc = Math.floor((scores.quiz * 0.4) + (scores.log * 0.4) + (scores.obs * 0.2)) || 10;
+                const mul = Math.floor((scores.click * 0.6) + (scores.obs * 0.4)) || 10;
+                const sta = Math.floor(Math.min(100, (totalEarnedAp / 5000) * 100)) || 5;
+                const ana = Math.floor((scores.quiz * 0.5) + (scores.obs * 0.5)) || 10;
+                const str = Math.floor((scores.time * 0.5) + (scores.react * 0.5)) || 10;
+                const ada = Math.floor((scores.react * 0.5) + (scores.log * 0.5)) || 10;
+
+                const updateBar = (id, val) => {
+                    document.getElementById('val_' + id).innerText = val + '%';
+                    document.getElementById('bar_' + id).style.width = val + '%';
+                };
+                
+                setTimeout(() => {
+                    updateBar('accuracy', acc);
+                    updateBar('multi', mul);
+                    updateBar('stamina', sta);
+                    updateBar('analysis', ana);
+                    updateBar('stress', str);
+                    updateBar('adapt', ada);
+                }, 300);
+
+                // 5. キャリアタグ生成
+                const tagContainer = document.getElementById('positionTags');
+                data.tags.forEach(t => {
+                    const span = document.createElement('span');
+                    span.className = 'tag';
+                    span.innerText = t;
+                    tagContainer.appendChild(span);
+                });
+
+            } catch (error) {
+                // 👑 万が一エラーが起きてもフリーズさせずに画面に表示する
+                document.getElementById('classLabel').innerText = "SYSTEM ERROR";
+                document.getElementById('className').innerText = "解析処理に失敗";
+                document.getElementById('classDesc').innerHTML = `<span style="color:var(--danger);">データの読み込み中にエラーが発生しました。<br>エラー詳細: ${error.message}</span>`;
+                document.getElementById('idCard').style.display = 'none';
             }
-
-            const data = detailedAnalysis[mainType];
-
-            // 1. 基本情報の更新
-            document.getElementById('typeIcon').innerText = data.icon;
-            document.getElementById('className').innerText = data.name;
-            document.getElementById('classLabel').innerText = `MAIN: ${mainType.toUpperCase()} / SUB: ${subType.toUpperCase()}`;
-            document.getElementById('prosText').innerHTML = data.pros;
-            document.getElementById('consText').innerHTML = data.cons;
-            document.getElementById('adviceBox').innerHTML = data.advice;
-
-            // 2. 数値演出
-            const acc = Math.floor((scores.quiz + scores.log) / 2) || 40;
-            const str = Math.floor((scores.time + scores.react) / 2) || 40;
-            const mul = Math.floor((scores.click + scores.obs) / 2) || 40;
-
-            const updateBar = (id, val) => {
-                document.getElementById('val_' + id).innerText = val + '%';
-                document.getElementById('bar_' + id).style.width = val + '%';
-            };
-            setTimeout(() => {
-                updateBar('accuracy', acc);
-                updateBar('stress', str);
-                updateBar('multi', mul);
-            }, 300);
-
-            // 3. キャリアタグ生成
-            const tagContainer = document.getElementById('positionTags');
-            data.tags.forEach(t => {
-                const span = document.createElement('span');
-                span.className = 'tag';
-                span.innerText = t;
-                tagContainer.appendChild(span);
-            });
         };
     </script>
 </body>
