@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>測定ロジック解説 - CORE ANALYZER ARCHITECTURE</title>
+    <style>
+        /* =========================================
+           1. 基本設定＆カラーパレット
+           ========================================= */
+        :root {
+            --bg-gradient: linear-gradient(135deg, #020617, #1e1b4b, #020617);
+            --glass-bg: rgba(15, 23, 42, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --accent-color: #0ea5e9; 
+            --accent-glow: rgba(14, 165, 233, 0.6);
+            --highlight: #f0abfc;
+            --target-color: #f59e0b;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Helvetica Neue', Arial, sans-serif; user-select: none; }
+        
+        body { 
+            background: var(--bg-gradient); color: var(--text-main); 
+            display: flex; flex-direction: column; align-items: center; 
+            min-height: 100dvh; overflow-x: hidden;
+            -webkit-text-size-adjust: 100%; touch-action: manipulation;
+        }
+
+        /* 背景不動レイヤー */
+        #bgContainer { position: fixed !important; inset: 0 !important; width: 100% !important; height: 100dvh !important; z-index: -2; pointer-events: none; overflow: hidden; will-change: transform; }
+        .bg-layer { position: absolute; inset: 0; width: 100%; height: 100%; background-size: cover; background-position: center center; background-repeat: no-repeat; filter: blur(15px) brightness(0.4); transform: scale(1.15); transition: opacity 2s ease-in-out, filter 0.6s, transform 0.6s, background-size 0.6s; will-change: transform, opacity; }
+        .scanlines { position: fixed; inset: 0; z-index: -1; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%); background-size: 100% 4px; pointer-events: none; }
+
+        .top-nav { width: 100%; max-width: 900px; padding: 20px 15px; position: sticky; top: 0; z-index: 100; display: flex; justify-content: flex-start; }
+        .back-btn { display: inline-flex; align-items: center; gap: 5px; color: #fff; text-decoration: none; font-size: 0.9rem; font-weight: bold; background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 20px; border: 1px solid var(--glass-border); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: transform 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .back-btn:active { transform: scale(0.95); }
+
+        /* =========================================
+           2. メインコンテンツ
+           ========================================= */
+        .content-wrapper {
+            width: 100%; max-width: 900px; padding: 10px 15px 60px;
+            display: flex; flex-direction: column; gap: 20px; z-index: 10;
+        }
+
+        .header-section { text-align: center; margin-bottom: 20px; background: var(--glass-bg); padding: 30px 20px; border-radius: 24px; border: 1px solid var(--glass-border); backdrop-filter: blur(20px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .header-sub { font-size: 0.75rem; color: var(--accent-color); letter-spacing: 4px; font-weight: bold; margin-bottom: 5px; }
+        .header-title { font-size: 1.8rem; font-weight: bold; text-shadow: 0 0 15px var(--accent-glow); line-height: 1.3; }
+        .header-desc { font-size: 0.9rem; color: var(--text-dim); margin-top: 15px; line-height: 1.6; text-align: left; }
+
+        /* カードデザイン */
+        .doc-card {
+            background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border); border-radius: 20px; padding: 25px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4); display: flex; flex-direction: column; gap: 12px;
+            position: relative; overflow: hidden;
+        }
+        .doc-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--accent-color); opacity: 0.7; }
+
+        /* システム解説用特殊カード */
+        .system-card { border-color: var(--target-color); }
+        .system-card::before { background: var(--target-color); }
+
+        .card-header { display: flex; align-items: center; gap: 15px; }
+        .card-icon { font-size: 2.2rem; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2)); }
+        .card-title-group { display: flex; flex-direction: column; }
+        .card-title { font-size: 1.25rem; font-weight: bold; color: #fff; }
+        .card-subtitle { font-size: 0.75rem; color: var(--accent-color); font-weight: bold; letter-spacing: 1px; }
+        .system-card .card-subtitle { color: var(--target-color); }
+
+        .card-body { font-size: 0.9rem; color: var(--text-dim); line-height: 1.7; }
+        .card-body strong { color: #fff; }
+        
+        .card-footer { margin-top: 5px; padding-top: 15px; border-top: 1px solid var(--glass-border); font-size: 0.85rem; color: var(--highlight); font-weight: bold; }
+
+        @media (min-width: 769px) {
+            .header-title { font-size: 2.5rem; }
+            .doc-card { padding: 30px; }
+            .card-title { font-size: 1.5rem; }
+            .card-body { font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="bgContainer">
+        <div class="bg-layer" id="bg1"></div>
+        <div class="bg-layer" id="bg2"></div>
+    </div>
+    <div class="scanlines"></div>
+
+    <div class="top-nav">
+        <a href="index.html" class="back-btn">⬅ ポータルへ戻る</a>
+    </div>
+
+    <div class="content-wrapper">
+        <div class="header-section">
+            <div class="header-sub">SYSTEM ARCHITECTURE</div>
+            <h1 class="header-title">測定ロジックの科学的根拠</h1>
+            <div class="header-desc">
+                CORE ANALYZERは、プロフェッショナルに必要な「実践的な認知能力」を6つの次元から正確にプロファイリングするために設計されています。<br><br>
+                <strong>📊 3層構造レーダーチャートについて</strong><br>
+                ポータル画面のチャートは、あなたの実力（<span style="color:var(--accent-color);">青線</span>）が、一般平均（<span style="color:#fff; opacity:0.6;">白点線</span>）と、目標とすべきエリート研究者基準（<span style="color:var(--target-color);">オレンジ破線</span>）に対してどの位置にあるかを可視化しています。
+            </div>
+        </div>
+
+        <div class="doc-card">
+            <div class="card-header">
+                <div class="card-icon">🧠</div>
+                <div class="card-title-group">
+                    <div class="card-subtitle">KNOWLEDGE / 結晶性知能</div>
+                    <div class="card-title">知識力</div>
+                </div>
+            </div>
+            <div class="card-body">
+                学習や経験によって蓄積された<strong>「結晶性知能」</strong>を測定します。いかに優れた推論力を持っていても、基盤となる語彙や専門知識が欠けていれば、正しい仮説は構築できません。このテストでは、広範な事象に対する正確な知識のストック量を評価します。
+            </div>
+        </div>
+
+        <div class="doc-card">
+            <div class="card-header">
+                <div class="card-icon">🎯</div>
+                <div class="card-title-group">
+                    <div class="card-subtitle">PROCESSING / スループット</div>
+                    <div class="card-title">情報処理能力</div>
+                </div>
+            </div>
+            <div class="card-body">
+                一定時間内にどれだけの単純作業を正確に反復できるかという<strong>「運動・情報処理のスループット」</strong>を測定します。研究におけるデータ入力や単純計算など、疲労下においてもペースを落とさずに作業を完遂する「脳のスタミナとクロック周波数」の指標となります。
+            </div>
+        </div>
+
+        <div class="doc-card">
+            <div class="card-header">
+                <div class="card-icon">⚡</div>
+                <div class="card-title-group">
+                    <div class="card-subtitle">ALERTNESS / 覚醒度・反応速度</div>
+                    <div class="card-title">覚醒反応</div>
+                </div>
+            </div>
+            <div class="card-body">
+                突発的な事象に対する視覚的反応速度を測り、現在の<strong>「脳の覚醒レベル」</strong>をプロファイリングします。睡眠不足や疲労が蓄積しているとこの数値は露骨に低下します。イレギュラーなデータに対して、フライング（誤検知）することなく確実に対応するための「神経伝達の最適化」を評価します。
+            </div>
+            <div class="card-footer">💡 評価ポイント：疲労度を測るコンディション・バロメーター</div>
+        </div>
+
+        <div class="doc-card">
+            <div class="card-header">
+                <div class="card-icon">⏱️</div>
+                <div class="card-title-group">
+                    <div class="card-subtitle">TIME PERCEPTION / 内的リズム</div>
+                    <div class="card-title">時間知覚</div>
+                </div>
+            </div>
+            <div class="card-body">
+                外部からの情報を遮断された状態で時間を正確に見積もる<strong>「体内時計（インターナル・クロック）」</strong>の精度を測定します。人間は焦っていたり、逆に集中しすぎていると脳内の時間にズレが生じます。この誤差を測ることで、現在のあなたの「精神的な焦燥感・落ち着き」を分析します。
+            </div>
+        </div>
+
+        <div class="doc-card">
+            <div class="card-header">
+                <div class="card-icon">🔍</div>
+                <div class="card-title-group">
+                    <div class="card-subtitle">OBSERVATION / ノイズフィルタリング</div>
+                    <div class="card-title">異常検知</div>
+                </div>
+            </div>
+            <div class="card-body">
+                膨大な類似データの中から、わずかな「外れ値」を瞬時に見つけ出す<strong>「パターン認識能力」</strong>を測定します。ゲシュタルト崩壊に耐えながら、マクロな全体像とミクロな差異を素早く切り替える視覚探索機能は、データの有意差を見抜くために不可欠です。
+            </div>
+        </div>
+
+        <div class="doc-card">
+            <div class="card-header">
+                <div class="card-icon">🧩</div>
+                <div class="card-title-group">
+                    <div class="card-subtitle">LOGIC / 命題処理・流動性知能</div>
+                    <div class="card-title">論理処理</div>
+                </div>
+            </div>
+            <div class="card-body">
+                プログラミングやデータ検索の基盤となる<strong>「ブール論理（AND / OR / NOT）」</strong>を、脳内でいかに高速かつ正確に演算できるかを測定します。また、ルールが突然切り替わる状況下で適応する「認知的柔軟性（ウィスコンシン・カード分類テストの応用）」も同時に評価します。
+            </div>
+            <div class="card-footer">💡 評価ポイント：複雑な命題を瞬時に理解し仕分ける実務的処理速度</div>
+        </div>
+
+        <div class="doc-card system-card">
+            <div class="card-header">
+                <div class="card-icon">🖼️</div>
+                <div class="card-title-group">
+                    <div class="card-subtitle">REWARD SYSTEM / 解析ポイント</div>
+                    <div class="card-title">データ・アーカイブとAP</div>
+                </div>
+            </div>
+            <div class="card-body">
+                各テストを実行し、自己ベストを更新したり毎日のシステム起動（デイリーボーナス）を行うことで、<strong>「解析ポイント（AP）」</strong>が蓄積されます。<br><br>
+                獲得したAPを消費することで、量子暗号化された200種類の背景データを復号（ガチャ）することが可能です。復元に成功したデータは、ポータルのメインモニター（背景）に固定することができます。
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // =========================================
+        // 🖼️ 背景クロスフェード・スライドショー
+        // =========================================
+        const bgs = [document.getElementById('bg1'), document.getElementById('bg2')];
+        let currentBgIdx = 0; 
+
+        function getDevicePath() { return window.innerWidth <= 768 ? 'bg/sp/' : 'bg/pc/'; }
+
+        function initAppBg() {
+            const fixedBg = localStorage.getItem('fixed_bg') || '0';
+            const folder = getDevicePath();
+            
+            if (fixedBg !== '0') {
+                // 固定背景が設定されている場合はそれを表示
+                bgs[0].style.backgroundImage = `url('${folder}bg (${fixedBg}).webp')`;
+                bgs[0].style.opacity = 1; bgs[0].style.zIndex = 1; 
+                bgs[1].style.opacity = 0; bgs[1].style.zIndex = 0;
+            } else {
+                // スライドショー
+                bgs[0].style.backgroundImage = `url('${folder}bg (${Math.floor(Math.random() * 200) + 1}).webp')`;
+                bgs[0].style.opacity = 1; bgs[0].style.zIndex = 1; 
+                bgs[1].style.opacity = 0; bgs[1].style.zIndex = 0; 
+                setInterval(updateBg, 4000);
+            }
+        }
+
+        function updateBg() {
+            const nextIdx = (currentBgIdx + 1) % 2; 
+            const folder = getDevicePath(); 
+            const img = new Image();
+            img.src = `${folder}bg (${Math.floor(Math.random() * 200) + 1}).webp`; 
+            img.onload = () => {
+                bgs[nextIdx].style.backgroundImage = `url('${img.src}')`;
+                bgs[nextIdx].style.zIndex = 1; 
+                bgs[currentBgIdx].style.zIndex = 0; 
+                bgs[nextIdx].style.opacity = 1; 
+                bgs[currentBgIdx].style.opacity = 0; 
+                currentBgIdx = nextIdx;
+            };
+        }
+        
+        initAppBg();
+    </script>
+</body>
+</html>

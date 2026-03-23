@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>論理力（命題処理）測定 - BOOLEAN GATE</title>
+    <style>
+        /* =========================================
+           1. 基本設定＆カラーパレット
+           ========================================= */
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f172a, #1e1b4b, #0f172a);
+            --glass-bg: rgba(15, 23, 42, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --text-main: #f8fafc;
+            --accent-color: #0ea5e9; 
+            --accent-glow: rgba(14, 165, 233, 0.6);
+            --danger-color: #ef4444;
+            --danger-glow: rgba(239, 68, 68, 0.6);
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Helvetica Neue', Arial, sans-serif; user-select: none; }
+        
+        body { 
+            background-color: #000; color: var(--text-main); 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            min-height: 100dvh; height: 100dvh; 
+            padding: 0; overflow: hidden; -webkit-text-size-adjust: 100%; touch-action: manipulation; 
+        }
+
+        /* 👑 背景レイヤー（PC/スマホ出し分け対応） */
+        #bgContainer { position: fixed !important; inset: 0 !important; width: 100% !important; height: 100dvh !important; z-index: -2; pointer-events: none; overflow: hidden; }
+        .bg-layer { position: absolute; inset: 0; width: 100%; height: 100%; background-size: cover; background-position: center center; background-repeat: no-repeat; filter: blur(20px) brightness(0.4); transform: scale(1.1); transition: opacity 1.5s ease-in-out; will-change: opacity; opacity: 0; }
+        
+        .scanlines { position: fixed; inset: 0; z-index: -1; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%); background-size: 100% 4px; pointer-events: none; }
+
+        .back-btn { position: absolute; top: 15px; left: 15px; z-index: 10005; display: inline-flex; align-items: center; gap: 5px; color: #fff; text-decoration: none; font-size: 0.9rem; font-weight: bold; background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 20px; border: 1px solid var(--glass-border); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: all 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .back-btn:hover { background: rgba(0,0,0,0.7); transform: translateY(-2px); }
+
+        /* =========================================
+           2. ゲームパネル & UI
+           ========================================= */
+        .game-panel {
+            width: 100vw; height: 100dvh; 
+            display: flex; flex-direction: column; position: relative; overflow: hidden;
+        }
+
+        .top-controls { padding: 65px 15px 10px 15px; z-index: 10; flex-shrink: 0; }
+        .status-bar { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; font-size: 1.3rem; font-weight: bold; background: var(--glass-bg); border-radius: 15px; border: 1px solid var(--glass-border); color: #fff; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); max-width: 600px; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .score-display { color: var(--success-color); text-shadow: 0 0 10px var(--success-glow); }
+        .time-display { color: var(--accent-color); font-variant-numeric: tabular-nums; text-shadow: 0 0 10px var(--accent-glow); transition: color 0.3s; }
+        .time-display.danger { color: var(--danger-color); text-shadow: 0 0 15px var(--danger-glow); animation: shake 0.5s infinite; }
+
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-2px); } 75% { transform: translateX(2px); } }
+
+        .play-area { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 15px; width: 100%; max-width: 500px; margin: 0 auto; z-index: 5; }
+
+        /* スタートメッセージ */
+        .start-msg { position: absolute; font-size: 1.3rem; font-weight: bold; color: var(--text-main); text-shadow: 0 0 15px var(--accent-glow); text-align: center; line-height: 1.6; z-index: 10; transition: opacity 0.3s; pointer-events: none; }
+        .start-msg span { color: var(--accent-color); font-size: 1.5rem; }
+
+        /* 🧩 論理ルール表示エリア */
+        .rule-box {
+            width: 100%; background: rgba(0,0,0,0.6); border: 2px solid var(--accent-color); border-radius: 12px;
+            padding: 15px; margin-bottom: 20px; text-align: center; font-size: 1.3rem; font-weight: bold;
+            box-shadow: inset 0 0 20px rgba(14, 165, 233, 0.3), 0 0 15px var(--accent-glow);
+            opacity: 0; transform: translateY(-20px); transition: all 0.3s; pointer-events: none;
+        }
+        .rule-box.active { opacity: 1; transform: translateY(0); }
+        .rule-keyword { color: var(--warning-color); padding: 0 5px; border-bottom: 2px solid var(--warning-color); }
+        .rule-operator { color: #f472b6; font-size: 1.1rem; margin: 0 5px; }
+
+        /* 🧩 検査対象オブジェクト（図形） */
+        .target-container {
+            width: 180px; height: 180px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
+            border-radius: 20px; display: flex; justify-content: center; align-items: center;
+            margin-bottom: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            opacity: 0; transform: scale(0.8); transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .target-container.active { opacity: 1; transform: scale(1); }
+        .target-container.pop { animation: popObject 0.3s forwards; }
+        @keyframes popObject { 0% { transform: scale(0.5); opacity: 0; } 70% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+
+        .svg-icon { width: 70%; height: 70%; filter: drop-shadow(0 5px 10px rgba(0,0,0,0.5)); }
+
+        /* 🟢🔴 真偽判定ボタン */
+        .btn-grid {
+            display: flex; gap: 15px; width: 100%; opacity: 0; pointer-events: none; transform: translateY(20px); transition: all 0.3s;
+        }
+        .btn-grid.active { opacity: 1; pointer-events: auto; transform: translateY(0); }
+
+        .judge-btn {
+            flex: 1; padding: 20px 10px; font-size: 1.4rem; font-weight: bold; color: #fff; border-radius: 15px; cursor: pointer;
+            display: flex; flex-direction: column; align-items: center; gap: 5px; border: 2px solid; box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+            transition: all 0.1s;
+        }
+        .judge-btn:active { transform: scale(0.95); }
+        
+        .btn-true { background: rgba(16, 185, 129, 0.15); border-color: var(--success-color); }
+        .btn-true:active { background: rgba(16, 185, 129, 0.4); box-shadow: 0 0 20px rgba(16, 185, 129, 0.6); }
+        
+        .btn-false { background: rgba(239, 68, 68, 0.15); border-color: var(--danger-color); }
+        .btn-false:active { background: rgba(239, 68, 68, 0.4); box-shadow: 0 0 20px rgba(239, 68, 68, 0.6); }
+
+        .btn-icon { font-size: 2rem; }
+
+        /* エフェクト */
+        .flash-overlay { position: fixed; inset: 0; z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.1s; }
+        .flash-overlay.error { background: var(--danger-color); opacity: 0.3; }
+        .flash-overlay.success { background: var(--success-color); opacity: 0.2; }
+
+        .penalty-text { position: absolute; color: var(--danger-color); font-size: 3rem; font-weight: bold; text-shadow: 0 0 20px var(--danger-glow); pointer-events: none; opacity: 0; z-index: 100; font-variant-numeric: tabular-nums; }
+        .penalty-text.show { animation: floatPenalty 0.8s forwards; }
+        @keyframes floatPenalty { 0% { transform: translateY(0) scale(0.5); opacity: 1; } 100% { transform: translateY(-50px) scale(1.5); opacity: 0; } }
+
+        .start-btn { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); padding: 18px 50px; border: none; border-radius: 50px; font-size: 1.4rem; font-weight: bold; color: #fff; background: var(--accent-color); cursor: pointer; box-shadow: 0 4px 20px var(--accent-glow); letter-spacing: 2px; z-index: 60; transition: transform 0.1s; white-space: nowrap; }
+        .start-btn:active { transform: translate(-50%, 2px); }
+
+        /* リザルト画面 */
+        .result-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(15px); display: none; flex-direction: column; align-items: center; justify-content: flex-start; overflow-y: auto; z-index: 10002; padding: 70px 15px 40px 15px; opacity: 0; transition: opacity 0.5s; }
+        .result-overlay.show { display: flex; opacity: 1; }
+        .result-title { font-size: 1.2rem; color: #94a3b8; margin-bottom: 5px; }
+        .result-score { font-size: 5rem; font-weight: bold; color: #fff; text-shadow: 0 0 20px var(--accent-glow); margin-bottom: 30px; line-height: 1; }
+        .result-score span { font-size: 2rem; color: #94a3b8; }
+        .rank-stamp { font-size: 3rem; font-weight: bold; border: 4px solid; border-radius: 12px; padding: 10px 20px; margin-bottom: 40px; transform: scale(3); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .rank-stamp.drop { transform: scale(1) rotate(-5deg); opacity: 1; }
+        .btn-group { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 350px; margin-top: auto; margin-bottom: 10px; }
+        .cta-btn { width: 100%; padding: 15px; background: var(--accent-color); color: #fff; border-radius: 50px; font-weight: bold; font-size: 1.05rem; text-align: center; text-decoration: none; border: none; cursor: pointer; box-shadow: 0 4px 15px var(--accent-glow); transition: transform 0.1s; }
+        .cta-btn:active { transform: translateY(2px); }
+        .cta-btn-outline { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); box-shadow: none; }
+
+        @media (min-width: 769px) {
+            .rule-box { font-size: 1.8rem; padding: 25px; }
+            .target-container { width: 250px; height: 250px; }
+            .judge-btn { font-size: 1.8rem; padding: 30px 20px; }
+            .result-score { font-size: 8rem; }
+            .rank-stamp { font-size: 5rem; border-width: 6px; }
+            .btn-group { max-width: 450px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="bgContainer">
+        <div class="bg-layer" id="bg1"></div>
+        <div class="bg-layer" id="bg2"></div>
+    </div>
+    <div class="scanlines"></div>
+    <div class="flash-overlay" id="flashOverlay"></div>
+    <div class="penalty-text" id="penaltyText">-3.0s</div>
+
+    <a href="index.html" class="back-btn">⬅ ポータルへ戻る</a>
+
+    <div class="game-panel">
+        <div class="top-controls">
+            <div class="status-bar">
+                <div class="score-display">DATA PROCESSED: <span id="scoreDisplay">0</span></div>
+                <div class="time-display" id="timeDisplay">60.00</div>
+            </div>
+        </div>
+
+        <div class="play-area">
+            <div class="start-msg" id="startMsg">
+                指定された<span>論理条件</span>に従い<br>データを瞬時に仕分けよ<br><br>
+                <span style="font-size:1rem; color:var(--text-sub);">※誤判定は -3秒ペナルティ</span>
+            </div>
+            
+            <div class="rule-box" id="ruleBox">
+                </div>
+            
+            <div class="target-container" id="targetContainer">
+                <div id="targetSvg"></div>
+            </div>
+            
+            <div class="btn-grid" id="btnGrid">
+                <button class="judge-btn btn-true" id="btnTrue">
+                    <span class="btn-icon">⭕</span> 一致する (TRUE)
+                </button>
+                <button class="judge-btn btn-false" id="btnFalse">
+                    <span class="btn-icon">❌</span> 一致しない (FALSE)
+                </button>
+            </div>
+        </div>
+
+        <button class="start-btn" id="startBtn">LOGIC GATE START</button>
+
+        <div class="result-overlay" id="resultOverlay">
+            <div class="result-title">処理完了（正確な仕分け数）</div>
+            <div class="result-score" id="resultScore">0 <span>pts</span></div>
+            <div class="rank-stamp" id="rankStamp">RANK ---</div>
+            <div class="btn-group">
+                <button class="cta-btn cta-btn-outline" id="retryBtn">もう一度処理する</button>
+                <a href="index.html" class="cta-btn">📊 レーダーチャートを確認</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =========================================
+        // 🖼️ 背景デバイス判定＆クロスフェード
+        // =========================================
+        function getDevicePath() { return window.innerWidth <= 768 ? 'bg/sp/' : 'bg/pc/'; }
+        
+        const bgs = [document.getElementById('bg1'), document.getElementById('bg2')];
+        let currentBgIdx = 0;
+
+        function initAppBg() {
+            const folder = getDevicePath();
+            bgs[0].style.backgroundImage = `url('${folder}bg (${Math.floor(Math.random() * 100) + 1}).webp')`;
+            bgs[0].style.opacity = 1; bgs[0].style.zIndex = 1;
+            bgs[1].style.opacity = 0; bgs[1].style.zIndex = 0;
+        }
+
+        function updateBg() {
+            const nextIdx = (currentBgIdx + 1) % 2;
+            const folder = getDevicePath();
+            const img = new Image();
+            img.src = `${folder}bg (${Math.floor(Math.random() * 100) + 1}).webp`;
+            img.onload = () => {
+                bgs[nextIdx].style.backgroundImage = `url('${img.src}')`;
+                bgs[nextIdx].style.zIndex = 1; bgs[currentBgIdx].style.zIndex = 0;
+                bgs[nextIdx].style.opacity = 1; bgs[currentBgIdx].style.opacity = 0;
+                currentBgIdx = nextIdx;
+            };
+        }
+        initAppBg(); setInterval(updateBg, 6000);
+
+        // =========================================
+        // 🔧 Audio Engine
+        // =========================================
+        const Engine = {
+            ctx: null,
+            init() { if (!this.ctx) { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); if(this.ctx.state === 'suspended') this.ctx.resume(); } },
+            playSuccess() {
+                if(!this.ctx) return;
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.type = 'sine'; osc.frequency.setValueAtTime(1000, this.ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(1600, this.ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+                osc.start(); osc.stop(this.ctx.currentTime + 0.1);
+            },
+            playError() {
+                if(!this.ctx) return;
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, this.ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(80, this.ctx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime); gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+                osc.start(); osc.stop(this.ctx.currentTime + 0.2);
+            }
+        };
+
+        // =========================================
+        // 🧠 BOOLEAN GATE（命題処理）ロジック
+        // =========================================
+        const LogicGame = {
+            state: 'idle',
+            score: 0,
+            timeLeft: 60.000,
+            timerId: null,
+            lastTick: 0,
+            
+            // 現在のルールと正解
+            currentRule: null,
+            currentIsTargetTrue: false,
+            ruleObjectsProcessed: 0, // 同じルールのまま何回処理したか
+            
+            // プロパティ定義
+            colors: [
+                {id: 'red', name: '赤色', hex: '#ef4444'}, 
+                {id: 'blue', name: '青色', hex: '#0ea5e9'}, 
+                {id: 'green', name: '緑色', hex: '#10b981'}, 
+                {id: 'yellow', name: '黄色', hex: '#f59e0b'}
+            ],
+            shapes: [
+                {id: 'circle', name: '丸', svg: '<circle cx="50" cy="50" r="40"/>'}, 
+                {id: 'square', name: '四角', svg: '<rect x="15" y="15" width="70" height="70" rx="8"/>'}, 
+                {id: 'triangle', name: '三角', svg: '<polygon points="50,15 85,85 15,85" stroke-linejoin="round"/>'}
+            ],
+
+            ranks: [
+                {req: 40, n: "S級 処理プロセッサ", c: "#10b981"}, 
+                {req: 30, n: "A級 分析官", c: "#0ea5e9"}, 
+                {req: 20, n: "B級 研究員", c: "#8b5cf6"},
+                {req: 10, n: "C級 一般人", c: "#f59e0b"}, 
+                {req: 0,  n: "D級 バグ発生", c: "#ef4444"}
+            ],
+
+            els: {
+                btn: document.getElementById('startBtn'), msg: document.getElementById('startMsg'),
+                ruleBox: document.getElementById('ruleBox'), targetBox: document.getElementById('targetContainer'),
+                targetSvg: document.getElementById('targetSvg'), btnGrid: document.getElementById('btnGrid'),
+                btnTrue: document.getElementById('btnTrue'), btnFalse: document.getElementById('btnFalse'),
+                score: document.getElementById('scoreDisplay'), time: document.getElementById('timeDisplay'), 
+                flash: document.getElementById('flashOverlay'), penalty: document.getElementById('penaltyText'), 
+                over: document.getElementById('resultOverlay'), rScore: document.getElementById('resultScore'), 
+                stamp: document.getElementById('rankStamp')
+            },
+
+            init() {
+                this.state = 'idle'; this.score = 0; this.timeLeft = 60.000;
+                this.els.score.textContent = this.score;
+                this.els.time.textContent = this.timeLeft.toFixed(2);
+                this.els.time.classList.remove('danger');
+                this.els.ruleBox.classList.remove('active');
+                this.els.targetBox.classList.remove('active');
+                this.els.btnGrid.classList.remove('active');
+                this.els.msg.style.opacity = 1;
+                this.els.btn.style.display = 'block';
+                this.els.over.classList.remove('show');
+                this.els.stamp.classList.remove('drop');
+            },
+
+            start() {
+                Engine.init();
+                this.state = 'playing';
+                this.els.btn.style.display = 'none';
+                this.els.msg.style.opacity = 0;
+                this.els.ruleBox.classList.add('active');
+                this.els.targetBox.classList.add('active');
+                this.els.btnGrid.classList.add('active');
+                
+                this.lastTick = performance.now();
+                this.timerId = requestAnimationFrame((t) => this.tick(t));
+                
+                this.generateNewRule();
+                this.generateObject();
+            },
+
+            tick(now) {
+                if(this.state !== 'playing') return;
+                const delta = (now - this.lastTick) / 1000;
+                this.lastTick = now;
+                this.timeLeft -= delta;
+
+                if(this.timeLeft <= 10) this.els.time.classList.add('danger');
+                else this.els.time.classList.remove('danger');
+
+                if (this.timeLeft <= 0) {
+                    this.timeLeft = 0;
+                    this.els.time.textContent = "0.00";
+                    this.end();
+                } else {
+                    this.els.time.textContent = this.timeLeft.toFixed(2);
+                    this.timerId = requestAnimationFrame((t) => this.tick(t));
+                }
+            },
+
+            // 👑 論理ルールの自動生成（スコアに応じて複雑化）
+            generateNewRule() {
+                this.ruleObjectsProcessed = 0;
+                
+                const randColor = this.colors[Math.floor(Math.random() * this.colors.length)];
+                const randShape = this.shapes[Math.floor(Math.random() * this.shapes.length)];
+                
+                // 難易度レベル (スコアによって解放)
+                let level = 1;
+                if(this.score >= 5) level = 2;
+                if(this.score >= 15) level = 3;
+                if(this.score >= 25) level = 4;
+
+                let ruleTypes = [1]; // 1: Color
+                if(level >= 2) ruleTypes.push(2, 3); // 2: Shape, 3: NOT Color
+                if(level >= 3) ruleTypes.push(4, 5); // 4: AND, 5: OR
+                if(level >= 4) ruleTypes.push(6);    // 6: AND NOT
+
+                const type = ruleTypes[Math.floor(Math.random() * ruleTypes.length)];
+
+                this.currentRule = { type: type, c: randColor, s: randShape };
+                
+                let ruleHTML = '';
+                switch(type) {
+                    case 1: ruleHTML = `<span class="rule-keyword" style="color:${randColor.hex}">${randColor.name}</span> である`; break;
+                    case 2: ruleHTML = `<span class="rule-keyword">${randShape.name}</span> である`; break;
+                    case 3: ruleHTML = `<span class="rule-keyword" style="color:${randColor.hex}">${randColor.name}</span> <span class="rule-operator">ではない</span>`; break;
+                    case 4: ruleHTML = `<span class="rule-keyword" style="color:${randColor.hex}">${randColor.name}</span> <span class="rule-operator">AND (かつ)</span> <span class="rule-keyword">${randShape.name}</span>`; break;
+                    case 5: ruleHTML = `<span class="rule-keyword" style="color:${randColor.hex}">${randColor.name}</span> <span class="rule-operator">OR (または)</span> <span class="rule-keyword">${randShape.name}</span>`; break;
+                    case 6: ruleHTML = `<span class="rule-keyword" style="color:${randColor.hex}">${randColor.name}</span> <span class="rule-operator">AND NOT (で、かつ)</span> <span class="rule-keyword">${randShape.name}ではない</span>`; break;
+                }
+                
+                // ルール変更時に軽くバウンスアニメーション
+                this.els.ruleBox.style.transform = 'scale(1.05)';
+                setTimeout(() => this.els.ruleBox.style.transform = 'scale(1)', 150);
+                this.els.ruleBox.innerHTML = ruleHTML;
+            },
+
+            // 👑 オブジェクト生成と真偽評価
+            generateObject() {
+                // 3〜5回同じルールで処理したら、脳を揺さぶるためにルールを変える（認知的柔軟性テスト）
+                if (this.ruleObjectsProcessed >= Math.floor(Math.random() * 3) + 3) {
+                    this.generateNewRule();
+                }
+
+                // 答えが TRUE と FALSE で 50:50 くらいになるように調整して生成
+                const forceTrue = Math.random() > 0.5;
+                let objColor, objShape;
+
+                if (forceTrue) {
+                    // ルールを満たすオブジェクトを生成
+                    do {
+                        objColor = this.colors[Math.floor(Math.random() * this.colors.length)];
+                        objShape = this.shapes[Math.floor(Math.random() * this.shapes.length)];
+                    } while (!this.evaluateRule(objColor, objShape));
+                } else {
+                    // ルールを満たさないオブジェクトを生成
+                    do {
+                        objColor = this.colors[Math.floor(Math.random() * this.colors.length)];
+                        objShape = this.shapes[Math.floor(Math.random() * this.shapes.length)];
+                    } while (this.evaluateRule(objColor, objShape));
+                }
+
+                this.currentIsTargetTrue = forceTrue;
+                
+                // SVG描画
+                this.els.targetSvg.innerHTML = `<svg class="svg-icon" viewBox="0 0 100 100" fill="${objColor.hex}">${objShape.svg}</svg>`;
+                
+                // ポップアニメーション
+                this.els.targetBox.classList.remove('pop');
+                void this.els.targetBox.offsetWidth; // reflow
+                this.els.targetBox.classList.add('pop');
+            },
+
+            evaluateRule(c, s) {
+                const r = this.currentRule;
+                switch(r.type) {
+                    case 1: return c.id === r.c.id;
+                    case 2: return s.id === r.s.id;
+                    case 3: return c.id !== r.c.id;
+                    case 4: return (c.id === r.c.id && s.id === r.s.id);
+                    case 5: return (c.id === r.c.id || s.id === r.s.id);
+                    case 6: return (c.id === r.c.id && s.id !== r.s.id);
+                    default: return false;
+                }
+            },
+
+            handleHit(userAnswer, event) {
+                if(this.state !== 'playing') return;
+
+                if (userAnswer === this.currentIsTargetTrue) {
+                    // 正解
+                    Engine.playSuccess();
+                    this.score++;
+                    this.els.score.textContent = this.score;
+                    this.ruleObjectsProcessed++;
+                    this.flashScreen('success');
+                    this.generateObject();
+                } else {
+                    // 誤答
+                    Engine.playError();
+                    this.timeLeft -= 3; // 👑 スピードゲームなのでペナルティは少し軽めの-3秒
+                    this.ruleObjectsProcessed++;
+                    this.flashScreen('error');
+                    
+                    if(event) {
+                        let x = event.clientX || (event.touches && event.touches[0].clientX) || window.innerWidth/2; 
+                        let y = event.clientY || (event.touches && event.touches[0].clientY) || window.innerHeight/2;
+                        this.els.penalty.style.left = `${x - 40}px`;
+                        this.els.penalty.style.top = `${y - 20}px`;
+                        this.els.penalty.classList.remove('show');
+                        void this.els.penalty.offsetWidth; 
+                        this.els.penalty.classList.add('show');
+                    }
+                    // 間違えてもテンポを崩さないため、即座に次へ進む
+                    this.generateObject();
+                }
+            },
+
+            flashScreen(type) {
+                this.els.flash.className = `flash-overlay ${type}`;
+                setTimeout(() => this.els.flash.className = 'flash-overlay', 100);
+            },
+
+            end() {
+                this.state = 'ended';
+                cancelAnimationFrame(this.timerId);
+                this.els.ruleBox.classList.remove('active');
+                this.els.targetBox.classList.remove('active');
+                this.els.btnGrid.classList.remove('active');
+                
+                let currentBest = parseInt(localStorage.getItem('b_log') || 0);
+                if (this.score > currentBest) localStorage.setItem('b_log', this.score);
+
+                let rank = this.ranks[this.ranks.length-1];
+                for(let r of this.ranks) { if(this.score >= r.req) { rank = r; break; } }
+
+                this.els.rScore.innerHTML = `${this.score} <span>pts</span>`;
+                this.els.stamp.textContent = `RANK: ${rank.n}`;
+                this.els.stamp.style.color = rank.c;
+                this.els.stamp.style.borderColor = rank.c;
+                this.els.stamp.style.textShadow = `0 0 30px ${rank.c}`;
+
+                setTimeout(() => {
+                    this.els.over.classList.add('show');
+                    setTimeout(() => this.els.stamp.classList.add('drop'), 300);
+                }, 500);
+            }
+        };
+
+        // 判定ボタンのイベント
+        const btnTrueAction = (e) => { e.preventDefault(); LogicGame.handleHit(true, e); };
+        const btnFalseAction = (e) => { e.preventDefault(); LogicGame.handleHit(false, e); };
+        
+        LogicGame.els.btnTrue.addEventListener('touchstart', btnTrueAction, {passive: false});
+        LogicGame.els.btnTrue.addEventListener('mousedown', btnTrueAction);
+        
+        LogicGame.els.btnFalse.addEventListener('touchstart', btnFalseAction, {passive: false});
+        LogicGame.els.btnFalse.addEventListener('mousedown', btnFalseAction);
+
+        LogicGame.els.btn.addEventListener('click', () => LogicGame.start());
+        document.getElementById('retryBtn').addEventListener('click', () => LogicGame.init());
+        
+        window.onload = () => LogicGame.init();
+    </script>
+</body>
+</html>

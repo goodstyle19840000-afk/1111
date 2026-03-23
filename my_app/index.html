@@ -8,6 +8,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
+        /* =========================================
+           1. 基本設定＆カラーパレット
+           ========================================= */
         :root {
             --accent-blue: #0ea5e9;
             --accent-glow: rgba(14, 165, 233, 0.6);
@@ -17,144 +20,82 @@
             --text-main: #f8fafc;
             --text-dim: #94a3b8;
             --highlight: #f0abfc;
+            --success-color: #10b981;
+            --target-color: #f59e0b; /* エリート基準色 */
         }
 
-        /* 👑 iPhone Safari対策: 全要素で長押しメニューを禁止し、操作性を確保 */
-        * { 
-            margin: 0; padding: 0; box-sizing: border-box; 
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
-        }
-        
-        /* 👑 iPhoneのバーを考慮した100dvh設定 */
-        body { 
-            background: var(--bg-dark); color: var(--text-main); 
-            min-height: 100dvh; overflow-x: hidden; 
-            display: flex; flex-direction: column; align-items: center;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Helvetica Neue', Arial, sans-serif; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+        body { background: var(--bg-dark); color: var(--text-main); min-height: 100dvh; overflow-x: hidden; display: flex; flex-direction: column; align-items: center; }
 
-        /* =========================================
-           👑 背景不動レイヤー・スライドショー設定
-           ========================================= */
-        /* 背景専用の親Container（スタック文脈を作成） */
-        #bgContainer {
-            position: fixed !important; inset: 0 !important;
-            width: 100% !important; height: 100dvh !important;
-            z-index: -2; /* 通常モード時はパネル(z:auto)の奥 */
-            pointer-events: none; /* コンテンツのクリックを邪魔しない */
-            overflow: hidden; will-change: transform;
-        }
+        /* 背景レイヤー */
+        #bgContainer { position: fixed !important; inset: 0 !important; width: 100% !important; height: 100dvh !important; z-index: -2; pointer-events: none; overflow: hidden; will-change: transform; }
+        .bg-layer { position: absolute; inset: 0; width: 100%; height: 100%; background-size: cover; background-position: center center; background-repeat: no-repeat; filter: blur(8px) brightness(0.6); transform: scale(1.15); transition: opacity 2s ease-in-out, filter 0.6s, transform 0.6s, background-size 0.6s; will-change: transform, opacity; }
 
-        .bg-layer {
-            position: absolute; inset: 0;
-            width: 100%; height: 100%;
-            background-size: cover; background-position: center center; background-repeat: no-repeat;
-            filter: blur(25px) brightness(0.35); 
-            transform: scale(1.15);
-            /* opacityとz-indexはJSで制御、transitionはここ */
-            transition: opacity 2s ease-in-out, filter 0.6s, transform 0.6s, background-size 0.6s;
-            will-change: transform, opacity;
-        }
-
-        /* 👑 のぞき見（隠しコマンド）発動時 */
-        body.view-bg #bgContainer { 
-            z-index: 1000 !important; /* パネル(auto)より前。リザルト(2000)、戻る(3000)より後。 */
-        }
-        body.view-bg .bg-layer { 
-            background-size: contain !important; /* 画像の左右を絶対に切らない */
-            filter: blur(0) brightness(0.9) !important; 
-            transform: scale(1.0) !important; 
-            /* 👑 修正: opacity: 1 !important; を削除し、JSによるフェード制御を有効化 */
-            background-color: #000; /* 余白は映画のように黒で締める */
-        }
-
-        .scanlines {
-            position: fixed; inset: 0; z-index: -1;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%);
-            background-size: 100% 4px; pointer-events: none;
-        }
+        body.view-bg #bgContainer { z-index: 1000 !important; }
+        body.view-bg .bg-layer { background-size: contain !important; filter: blur(0) brightness(0.9) !important; transform: scale(1.0) !important; background-color: #000; }
+        .scanlines { position: fixed; inset: 0; z-index: -1; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%); background-size: 100% 4px; pointer-events: none; }
 
         header { width: 100%; padding: 30px 20px 10px; text-align: center; z-index: 10; transition: opacity 0.5s; }
         .app-id { font-size: 0.7rem; color: var(--accent-blue); letter-spacing: 5px; font-weight: bold; margin-bottom: 5px; opacity: 0.8; }
         .app-title { font-size: 1.7rem; font-weight: bold; text-shadow: 0 0 20px var(--accent-glow); letter-spacing: 2px; }
 
+        /* =========================================
+           2. ダッシュボード＆ステータス
+           ========================================= */
         .dashboard { width: 100%; max-width: 900px; display: flex; flex-direction: column; gap: 15px; padding: 15px; z-index: 10; transition: opacity 0.5s; }
         @media (min-width: 850px) { .dashboard { flex-direction: row; } }
 
-        .panel {
-            background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border); border-radius: 24px; padding: 25px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.5); flex: 1; position: relative; overflow: hidden;
-        }
+        .panel { background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 24px; padding: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.5); flex: 1; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; }
+        .panel::before { content: ""; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 50px; height: 50px; border: 2px solid var(--accent-blue); border-radius: 50%; box-shadow: 0 0 30px var(--accent-blue); opacity: 0; animation: scanPulse 3s infinite cubic-bezier(0.1, 0.5, 0.5, 1); z-index: -1; }
+        .panel::after { content: ""; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 50px; height: 50px; border: 1px solid var(--accent-blue); border-radius: 50%; opacity: 0; animation: scanPulse 3s infinite 1.5s cubic-bezier(0.1, 0.5, 0.5, 1); z-index: -1; }
+        @keyframes scanPulse { 0% { transform: translate(-50%, -50%) scale(1); opacity: 0; } 20% { opacity: 0.6; } 100% { transform: translate(-50%, -50%) scale(8); opacity: 0; } }
 
-        /* スキャンパルスグリッド（波紋） */
-        .panel::before {
-            content: ""; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 50px; height: 50px; background: transparent; 
-            border: 2px solid var(--accent-blue); border-radius: 50%;
-            box-shadow: 0 0 30px var(--accent-blue);
-            opacity: 0; animation: scanPulse 3s infinite cubic-bezier(0.1, 0.5, 0.5, 1); z-index: -1;
-        }
-        .panel::after {
-            content: ""; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 50px; height: 50px; background: transparent; 
-            border: 1px solid var(--accent-blue); border-radius: 50%;
-            opacity: 0; animation: scanPulse 3s infinite 1.5s cubic-bezier(0.1, 0.5, 0.5, 1); z-index: -1;
-        }
-        @keyframes scanPulse { 
-            0% { transform: translate(-50%, -50%) scale(1); opacity: 0; } 
-            20% { opacity: 0.6; } 
-            100% { transform: translate(-50%, -50%) scale(8); opacity: 0; } 
-        }
+        /* チャートコンテナのサイズを調整して凡例を表示しやすくする */
+        .chart-container { position: relative; width: 100%; height: 320px; filter: drop-shadow(0 0 10px var(--accent-glow)); margin-bottom: 5px; }
 
-        .chart-container { position: relative; width: 100%; height: 280px; filter: drop-shadow(0 0 10px var(--accent-glow)); }
+        .docs-btn-subtle { display: block; width: 100%; text-align: center; font-size: 0.8rem; color: var(--text-dim); padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; text-decoration: none; transition: all 0.2s; background: rgba(0,0,0,0.2); margin-top: 10px; }
+        .docs-btn-subtle:hover { background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.3); }
 
-        .status-panel { text-align: center; display: flex; flex-direction: column; justify-content: space-between; }
-        
-        /* 現在値(強調) / 最大値(小さめ) 表示 */
+        .status-panel { text-align: center; }
         .total-power-value { font-size: 4.8rem; font-weight: 900; color: #fff; line-height: 1; margin: 10px 0; font-variant-numeric: tabular-nums; display: flex; align-items: baseline; justify-content: center; }
         .max-denominator { font-size: 1.5rem; color: var(--text-dim); margin-left: 5px; font-weight: 400; opacity: 0.6; }
         
-        .rank-title-box { 
-            padding: 15px; background: linear-gradient(90deg, rgba(14, 165, 233, 0.1), transparent);
-            border-radius: 12px; border-left: 5px solid var(--accent-blue); text-align: left;
-        }
+        .rank-title-box { padding: 15px; background: linear-gradient(90deg, rgba(14, 165, 233, 0.1), transparent); border-radius: 12px; border-left: 5px solid var(--accent-blue); text-align: left; }
         .rank-label { font-size: 0.75rem; color: var(--accent-blue); font-weight: 800; margin-bottom: 5px; }
         .rank-value { font-size: 1.4rem; font-weight: bold; color: #fff; display: flex; align-items: center; gap: 10px; }
+        .strong-point-badge { margin-top: 15px; font-size: 0.85rem; font-weight: bold; color: var(--highlight); display: inline-flex; align-items: center; gap: 6px; padding: 5px 15px; background: rgba(240, 171, 252, 0.1); border-radius: 50px; border: 1px solid var(--highlight); animation: fadeIn 1s; }
 
-        .strong-point-badge {
-            margin-top: 15px; font-size: 0.85rem; font-weight: bold; color: var(--highlight);
-            display: inline-flex; align-items: center; gap: 6px; padding: 5px 15px;
-            background: rgba(240, 171, 252, 0.1); border-radius: 50px; border: 1px solid var(--highlight);
-            animation: fadeIn 1s;
-        }
+        /* =========================================
+           3. 測定メニュー＆ギャラリーボタン
+           ========================================= */
+        .menu-grid { width: 100%; max-width: 900px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 0 15px 25px; z-index: 10; transition: opacity 0.5s; }
+        @media (min-width: 600px) { .menu-grid { grid-template-columns: repeat(3, 1fr); } }
 
-        /* メニューグリッド */
-        .menu-grid {
-            width: 100%; max-width: 900px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 15px 40px; z-index: 10; transition: opacity 0.5s;
-        }
-        @media (min-width: 600px) { .menu-grid { grid-template-columns: repeat(4, 1fr); } }
-
-        /* カーソル・タップ強調 */
-        .menu-card {
-            background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 20px; padding: 20px;
-            text-decoration: none; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            display: flex; flex-direction: column; align-items: center; cursor: pointer;
-        }
-        .menu-card:hover { 
-            transform: translateY(-8px) scale(1.05); 
-            background: rgba(255, 255, 255, 0.1); 
-            border-color: #fff; 
-            box-shadow: 0 10px 25px rgba(14, 165, 233, 0.4); 
-            filter: brightness(1.2);
-        }
+        .menu-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 20px; padding: 20px; text-decoration: none; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+        .menu-card:hover { transform: translateY(-8px) scale(1.05); background: rgba(255, 255, 255, 0.1); border-color: #fff; box-shadow: 0 10px 25px rgba(14, 165, 233, 0.4); filter: brightness(1.2); }
         .menu-card:active { transform: scale(0.95); }
-
         .menu-icon { font-size: 2rem; margin-bottom: 8px; filter: drop-shadow(0 0 8px rgba(255,255,255,0.2)); }
         .menu-title { font-size: 0.8rem; font-weight: bold; color: var(--text-dim); }
         .menu-score { font-size: 1.1rem; font-weight: 800; margin-top: 4px; color: #fff; }
+
+        .archive-section { width: 100%; max-width: 900px; padding: 0 15px 50px; margin: 0 auto; display: flex; justify-content: center; z-index: 10; position: relative; }
+        .archive-btn { width: 100%; background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(14, 165, 233, 0.15)); border: 2px solid var(--success-color); color: #fff; padding: 25px 20px; border-radius: 20px; text-align: center; text-decoration: none; box-shadow: 0 10px 30px rgba(0,0,0,0.4); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; backdrop-filter: blur(10px); }
+        .archive-btn:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(16, 185, 129, 0.5); border-color: #fff; background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(14, 165, 233, 0.3)); }
+        .archive-btn:active { transform: scale(0.98); }
+        .archive-title { font-size: 1.4rem; font-weight: bold; text-shadow: 0 0 15px var(--success-color); display: flex; align-items: center; gap: 10px; }
+        .archive-desc { font-size: 0.85rem; color: var(--text-dim); }
+        .archive-ap { margin-top: 5px; font-size: 1.1rem; font-weight: bold; color: var(--success-color); background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 20px; border: 1px solid rgba(16, 185, 129, 0.3); }
+
+        /* =========================================
+           4. 🔔 AP獲得トースト通知
+           ========================================= */
+        .toast-container { position: fixed; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 10000; pointer-events: none; }
+        .toast { background: rgba(15, 23, 42, 0.9); border-left: 4px solid var(--accent-blue); padding: 15px 20px; border-radius: 8px; color: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.5); backdrop-filter: blur(10px); display: flex; align-items: center; gap: 10px; transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: bold; font-size: 0.9rem; }
+        .toast.show { transform: translateX(0); }
+        .toast-icon { font-size: 1.5rem; }
+        .toast.daily { border-left-color: var(--highlight); }
+        .toast.play { border-left-color: var(--success-color); }
+        @media (max-width: 600px) { .toast-container { top: 10px; right: 10px; left: 10px; } .toast { padding: 12px 15px; font-size: 0.85rem; } }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
@@ -166,9 +107,10 @@
         <div class="bg-layer" id="bg2"></div>
     </div>
     <div class="scanlines"></div>
+    <div class="toast-container" id="toastContainer"></div>
 
     <header>
-        <div class="app-id">CORE_SYSTEM_v3.0</div>
+        <div class="app-id">CORE_SYSTEM_v6.0</div>
         <h1 class="app-title">総合力パラメーター</h1>
     </header>
 
@@ -177,13 +119,14 @@
             <div class="chart-container">
                 <canvas id="radarChart"></canvas>
             </div>
+            <a href="docs.html" class="docs-btn-subtle">📖 測定ロジックの科学的根拠を見る</a>
         </div>
 
         <div class="panel status-panel">
             <div>
                 <div class="total-power-label" style="font-size:0.75rem; color:var(--text-dim); letter-spacing:2px;">OVERALL INDEX</div>
                 <div class="total-power-value">
-                    <span id="totalScoreText">0</span><span class="max-denominator">/ 400</span>
+                    <span id="totalScoreText">0</span><span class="max-denominator">/ 600</span>
                 </div>
             </div>
             
@@ -202,173 +145,257 @@
         </div>
     </div>
 
+    <div style="width:100%; max-width:900px; padding: 0 15px 20px; z-index: 10;">
+        <a href="report.html" class="docs-btn-subtle" style="background: rgba(14, 165, 233, 0.1); border: 1px solid var(--accent-blue); color: #fff; font-weight: bold; padding: 18px; display: flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); transition: all 0.3s;">
+            📊 パーソナル・アナリティクス（詳細報告書）を生成
+        </a>
+    </div>
+
     <div class="menu-grid">
-        <a href="quiz.html" class="menu-card">
-            <div class="menu-icon">🧠</div>
-            <div class="menu-title">ビジネス知識</div>
-            <div class="menu-score" id="m_quiz">---</div>
-        </a>
-        <a href="click.html" class="menu-card">
-            <div class="menu-icon">🎯</div>
-            <div class="menu-title">処理能力</div>
-            <div class="menu-score" id="m_click">---</div>
-        </a>
-        <a href="reaction.html" class="menu-card">
-            <div class="menu-icon">⚡</div>
-            <div class="menu-title">反射決断</div>
-            <div class="menu-score" id="m_react">---</div>
-        </a>
-        <a href="time.html" class="menu-card">
-            <div class="menu-icon">⏱️</div>
-            <div class="menu-title">時間管理</div>
-            <div class="menu-score" id="m_time">---</div>
+        <a href="quiz.html" class="menu-card"><div class="menu-icon">🧠</div><div class="menu-title">知識力</div><div class="menu-score" id="m_quiz">---</div></a>
+        <a href="click.html" class="menu-card"><div class="menu-icon">🎯</div><div class="menu-title">情報処理</div><div class="menu-score" id="m_click">---</div></a>
+        <a href="reaction.html" class="menu-card"><div class="menu-icon">⚡</div><div class="menu-title">覚醒反応</div><div class="menu-score" id="m_react">---</div></a>
+        <a href="time.html" class="menu-card"><div class="menu-icon">⏱️</div><div class="menu-title">時間知覚</div><div class="menu-score" id="m_time">---</div></a>
+        <a href="observe.html" class="menu-card"><div class="menu-icon">🔍</div><div class="menu-title">異常検知</div><div class="menu-score" id="m_obs">---</div></a>
+        <a href="logic.html" class="menu-card"><div class="menu-icon">🧩</div><div class="menu-title">論理処理</div><div class="menu-score" id="m_log">---</div></a>
+    </div>
+
+    <div class="archive-section">
+        <a href="gallery.html" class="archive-btn">
+            <div class="archive-title">🖼️ DATA ARCHIVE</div>
+            <div class="archive-desc">解析ポイントを消費して背景データを復号・固定する</div>
+            <div class="archive-ap">所持: <span id="portalApDisplay">0</span> AP</div>
         </a>
     </div>
 
     <script>
         // =========================================
+        // 🔔 トースト通知表示関数
+        // =========================================
+        function showToast(message, type, icon) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<span class="toast-icon">${icon}</span> <span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 400); }, 4000);
+        }
+
+        // =========================================
         // 💾 データ取得と計算
         // =========================================
         const getS = (k, d=0) => localStorage.getItem(k) || d;
-        const raw = { quiz: parseInt(getS('b_quiz')), click: parseInt(getS('b_clk')), react: parseFloat(getS('b_rea')), time: parseFloat(getS('b_tim')) };
+        const raw = { 
+            quiz: parseInt(getS('b_quiz')), click: parseInt(getS('b_clk')), 
+            react: parseFloat(getS('b_rea')), time: parseFloat(getS('b_tim')),
+            obs: parseInt(getS('b_obs')), log: parseInt(getS('b_log'))
+        };
 
         const ptQuiz  = raw.quiz * 10;
         const ptClick = Math.min(100, (raw.click / 120) * 100);
         const ptReact = raw.react === 0 ? 0 : Math.max(0, Math.min(100, (0.40 - raw.react) / (0.40 - 0.15) * 100));
         const ptTime  = raw.time === 0 ? 0 : Math.max(0, Math.min(100, (1.0 - raw.time) / 1.0 * 100));
+        const ptObs   = raw.obs === 0 ? 0 : Math.min(100, (raw.obs / 40) * 100);
+        const ptLog   = raw.log === 0 ? 0 : Math.min(100, (raw.log / 40) * 100);
 
         if(raw.quiz > 0) document.getElementById('m_quiz').innerText = `${raw.quiz}/10`;
         if(raw.click > 0) document.getElementById('m_click').innerText = `${raw.click}`;
         if(raw.react > 0) document.getElementById('m_react').innerText = `${raw.react.toFixed(3)}s`;
         if(raw.time > 0) document.getElementById('m_time').innerText = `±${raw.time.toFixed(3)}s`;
+        if(raw.obs > 0) document.getElementById('m_obs').innerText = `${raw.obs} pt`;
+        if(raw.log > 0) document.getElementById('m_log').innerText = `${raw.log} pt`;
 
-        const total = Math.floor(ptQuiz + ptClick + ptReact + ptTime);
+        const total = Math.floor(ptQuiz + ptClick + ptReact + ptTime + ptObs + ptLog);
         document.getElementById('totalScoreText').innerText = total;
 
-        const pts = [ {n:"知識", v:ptQuiz, i:"🧠"}, {n:"処理", v:ptClick, i:"🎯"}, {n:"決断", v:ptReact, i:"⚡"}, {n:"計画", v:ptTime, i:"⏱️"} ];
+        const pts = [ 
+            {n:"知識", v:ptQuiz, i:"🧠"}, {n:"処理", v:ptClick, i:"🎯"}, 
+            {n:"覚醒", v:ptReact, i:"⚡"}, {n:"知覚", v:ptTime, i:"⏱️"},
+            {n:"観察", v:ptObs, i:"🔍"}, {n:"論理", v:ptLog, i:"🧩"}
+        ];
         const highest = [...pts].sort((a,b)=>b.v-a.v)[0];
+        
+        // 称号システム
         if(total > 0) {
-            let t = "👶 期待の新人";
-            if(total >= 350) t = "👑 伝説の執行役員";
-            else if(total >= 280) t = "⚔️ 無双のマネージャー";
-            else if(total >= 200) t = "🛠️ 敏腕スペシャリスト";
-            else if(total >= 100) t = "📈 成長株プレイヤー";
+            let t = "👶 期待の新人研究員";
+            if(total >= 500) t = "👑 伝説のノーベル賞候補";
+            else if(total >= 400) t = "⚔️ 無双の主席研究員";
+            else if(total >= 300) t = "🛠️ 敏腕データアナリスト";
+            else if(total >= 150) t = "📈 成長株リサーチャー";
 
-            if(highest.v >= 85) {
+            if(highest.v >= 80) {
                 document.getElementById('strongPoint').style.display = "inline-flex";
                 document.getElementById('strongPointName').innerText = highest.n;
-                if(highest.n==="知識") t="📜 沈着冷静な軍師";
-                if(highest.n==="処理") t="🚀 超速の事務処理官";
-                if(highest.n==="決断") t="⚡ 直感型の勝負師";
-                if(highest.n==="計画") t="⏱️ 精密なる時計職人";
+                if(highest.n==="知識") t="📜 沈着冷静な歩く辞書";
+                if(highest.n==="処理") t="🚀 超速の人間スパコン";
+                if(highest.n==="覚醒") t="⚡ 異常感知のスペシャリスト";
+                if(highest.n==="知覚") t="⏱️ 精密なる時計職人";
+                if(highest.n==="観察") t="🦅 鷹の目を持つ異常検知機";
+                if(highest.n==="論理") t="🧠 完全無欠の論理プロセッサ";
             }
             document.getElementById('titleText').innerText = t;
-            document.getElementById('adviceText').innerText = `あなたの最大の武器は「${highest.n}」です。この能力を軸に戦略を組み立ててください。`;
+            document.getElementById('adviceText').innerText = `点線の「エリート研究者基準」を目標に、最大の武器である「${highest.n}力」を活かして全セクターを突破してください。`;
         }
 
         // =========================================
-        // 📊 レーダーチャート (Chart.js)
+        // 💰 解析ポイント(AP)の神ボーナスロジック
+        // =========================================
+        let currentAP = parseInt(localStorage.getItem('core_ap')) || 0;
+        let bestTotal = parseInt(localStorage.getItem('best_total_score')) || 0;
+        let toastDelay = 500;
+
+        if (!localStorage.getItem('core_ap_init')) {
+            currentAP = 500; bestTotal = total; localStorage.setItem('best_total_score', bestTotal); localStorage.setItem('core_ap_init', 'true');
+            setTimeout(() => showToast('システム起動: 初期ボーナス 500 AP 獲得！', 'daily', '🎁'), toastDelay); toastDelay += 1200;
+        }
+
+        const today = new Date().toLocaleDateString();
+        const lastLogin = localStorage.getItem('last_login_date');
+        if (lastLogin !== today) {
+            currentAP += 100; localStorage.setItem('last_login_date', today);
+            setTimeout(() => showToast('デイリーボーナス: +100 AP 獲得！', 'daily', '📅'), toastDelay); toastDelay += 1200;
+        }
+
+        if (total > bestTotal) {
+            let diff = total - bestTotal;
+            // 👑 10倍 + 50AP の超絶ボーナス！
+            let bonusAP = (diff * 10) + 50;
+            currentAP += bonusAP;
+            bestTotal = total; localStorage.setItem('best_total_score', bestTotal);
+            setTimeout(() => showToast(`自己ベスト更新: 超絶ボーナス +${bonusAP} AP 獲得！`, 'play', '📈'), toastDelay); toastDelay += 1200;
+        }
+
+        let depTime = sessionStorage.getItem('departure_time');
+        let referrer = document.referrer || "";
+        if (depTime) {
+            let awayTime = Date.now() - parseInt(depTime);
+            sessionStorage.removeItem('departure_time');
+            let requiredTime = 15000;
+            if (referrer.includes('reaction.html')) requiredTime = 5000;
+            else if (referrer.includes('click.html') || referrer.includes('time.html')) requiredTime = 11000;
+
+            if (awayTime >= requiredTime) {
+                currentAP += 20;
+                setTimeout(() => showToast('テスト完了報酬: +20 AP 獲得！', 'play', '⚔️'), toastDelay); toastDelay += 1200;
+            } else {
+                setTimeout(() => showToast('プレイ時間が短すぎます（解析失敗）', '', '⚠️'), toastDelay); toastDelay += 1200;
+            }
+        }
+
+        localStorage.setItem('core_ap', currentAP);
+        document.getElementById('portalApDisplay').innerText = currentAP;
+
+        document.querySelectorAll('.menu-card').forEach(card => {
+            card.addEventListener('click', () => { sessionStorage.setItem('departure_time', Date.now()); });
+        });
+
+        // =========================================
+        // 📊 👑 3層構造レーダーチャート (Chart.js)
         // =========================================
         const ctx = document.getElementById('radarChart').getContext('2d');
         new Chart(ctx, {
             type: 'radar',
             data: {
                 labels: pts.map(p => `${p.i} ${p.n}\n${Math.floor(p.v)}pt`),
-                datasets: [{
-                    data: [ptQuiz, ptClick, ptReact, ptTime],
-                    backgroundColor: 'rgba(14, 165, 233, 0.25)',
-                    borderColor: '#0ea5e9',
-                    borderWidth: 4,
-                    pointBackgroundColor: '#fff',
-                    pointBorderColor: '#0ea5e9',
-                    pointRadius: 5,
-                    pointHoverRadius: 8,
-                }]
+                datasets: [
+                    // ① 自分の自己ベスト（メイン）
+                    {
+                        label: 'あなたの実力 (YOUR BEST)',
+                        data: pts.map(p => p.v),
+                        backgroundColor: 'rgba(14, 165, 233, 0.35)',
+                        borderColor: '#0ea5e9',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#0ea5e9',
+                        pointRadius: 4,
+                        pointHoverRadius: 7,
+                    },
+                    // ② 仮想エリート基準（目標ライン）
+                    {
+                        label: 'エリート基準 (ELITE TARGET)',
+                        data: [80, 85, 75, 80, 85, 90], // 知識, 処理, 覚醒, 知覚, 観察, 論理 の目標値
+                        backgroundColor: 'rgba(245, 158, 11, 0.05)',
+                        borderColor: 'rgba(245, 158, 11, 0.8)', // オレンジ系
+                        borderWidth: 2,
+                        borderDash: [5, 5], // 破線
+                        pointRadius: 0, // 点は非表示にしてスッキリさせる
+                        pointHoverRadius: 0,
+                    },
+                    // ③ 一般平均（仮想ベースライン）
+                    {
+                        label: '一般平均 (PUBLIC AVG)',
+                        data: [40, 50, 45, 40, 50, 40], // 知識, 処理, 覚醒, 知覚, 観察, 論理 の平均値
+                        backgroundColor: 'rgba(255, 255, 255, 0.0)', // 塗りつぶしなし
+                        borderColor: 'rgba(255, 255, 255, 0.3)', // 薄い白
+                        borderWidth: 1.5,
+                        borderDash: [2, 3], // 細かい点線
+                        pointRadius: 0,
+                        pointHoverRadius: 0,
+                    }
+                ]
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
                 scales: {
                     r: {
-                        angleLines: { color: 'rgba(255,255,255,0.2)', lineWidth: 1 },
-                        grid: { color: 'rgba(255,255,255,0.1)', circular: circular=true },
-                        pointLabels: { color: '#e2e8f0', font: { size: 11, weight: 'bold' }, padding: 15 },
-                        ticks: { display: false, min: 0, max: 100, stepSize: 25 },
+                        angleLines: { color: 'rgba(255,255,255,0.1)', lineWidth: 1 },
+                        grid: { color: 'rgba(255,255,255,0.08)', circular: false }, 
+                        pointLabels: { color: '#e2e8f0', font: { size: 10, weight: 'bold' }, padding: 12 },
+                        ticks: { display: false, min: 0, max: 100, stepSize: 20 },
                         suggestedMin: 0, suggestedMax: 100
                     }
                 },
-                plugins: { legend: { display: false } },
-                animation: { duration: 2000, easing: 'easeOutQuart' }
+                plugins: { 
+                    legend: { 
+                        display: true, 
+                        position: 'bottom',
+                        labels: { color: '#94a3b8', font: { size: 11 }, padding: 10, boxWidth: 15 }
+                    } 
+                },
+                animation: { duration: 2500, easing: 'easeOutQuart' }
             }
         });
 
         // =========================================
-        // 🖼️ 背景クロスフェード・スライドショー
+        // 🖼️ 背景（固定 ＆ クロスフェード対応）
         // =========================================
         const bgs = [document.getElementById('bg1'), document.getElementById('bg2')];
-        let currentBgIdx = 0; // 最初はbg1
+        let currentBgIdx = 0; let slideshowInterval = null;
+        function getDevicePath() { return window.innerWidth <= 768 ? 'bg/sp/' : 'bg/pc/'; }
 
-        // 👑 デバイス判定関数を追加
-        function getDevicePath() {
-            return window.innerWidth <= 768 ? 'bg/sp/' : 'bg/pc/';
-        }
-
-        // 👑 修正: 初期状態設定関数（DOM順に関わらず、bg1を上にして表示）
         function initAppBg() {
-            const randomNum = Math.floor(Math.random() * 195) + 1;
-            const folder = getDevicePath(); // フォルダを自動判定
-            const imgUrl = `${folder}bg (${randomNum}).webp`; // パスを結合
-            bgs[0].style.backgroundImage = `url('${imgUrl}')`;
-            
-            // ★重要: JSで style 属性を操作し、初期状態を確定させる
-            bgs[0].style.opacity = 1;
-            bgs[0].style.zIndex = 1; // bg1を上に
-            bgs[1].style.opacity = 0;
-            bgs[1].style.zIndex = 0; // bg2を下に
+            const fixedBg = localStorage.getItem('fixed_bg') || '0';
+            const folder = getDevicePath();
+            if (fixedBg !== '0') {
+                bgs[0].style.backgroundImage = `url('${folder}bg (${fixedBg}).webp')`;
+                bgs[0].style.opacity = 1; bgs[0].style.zIndex = 1; bgs[1].style.opacity = 0; bgs[1].style.zIndex = 0;
+            } else {
+                bgs[0].style.backgroundImage = `url('${folder}bg (${Math.floor(Math.random() * 200) + 1}).webp')`;
+                bgs[0].style.opacity = 1; bgs[0].style.zIndex = 1; bgs[1].style.opacity = 0; bgs[1].style.zIndex = 0; 
+                slideshowInterval = setInterval(updateBg, 4000);
+            }
         }
-
         function updateBg() {
-            const nextIdx = (currentBgIdx + 1) % 2; // フェードインしてくる次の画像（bg2 -> bg1 -> ...）
-            const randomNum = Math.floor(Math.random() * 195) + 1;
-            const folder = getDevicePath(); // フォルダを自動判定
-            const img = new Image();
-            img.src = `${folder}bg (${randomNum}).webp`; // パスを結合
+            const nextIdx = (currentBgIdx + 1) % 2; 
+            const img = new Image(); img.src = `${getDevicePath()}bg (${Math.floor(Math.random() * 200) + 1}).webp`; 
             img.onload = () => {
                 bgs[nextIdx].style.backgroundImage = `url('${img.src}')`;
-                
-                // 👑 修正: ★z-index制御：これからフェードインする「次の画像」を常に上にする★
-                // これにより、のぞき見モード（blurなし）でも美しいクロスフェードが見える
-                bgs[nextIdx].style.zIndex = 1; // style属性で指定
-                bgs[currentBgIdx].style.zIndex = 0; // style属性で指定
-
-                // opacityを切り替えてフェード演出（CSS transitionが適用される）
-                bgs[nextIdx].style.opacity = 1; // フェードイン
-                bgs[currentBgIdx].style.opacity = 0; // フェードアウト
-                
+                bgs[nextIdx].style.zIndex = 1; bgs[currentBgIdx].style.zIndex = 0; 
+                bgs[nextIdx].style.opacity = 1; bgs[currentBgIdx].style.opacity = 0; 
                 currentBgIdx = nextIdx;
             };
         }
-        
-        // ページロード時に初期画像をパッと表示
         initAppBg();
-        // 4秒後からスライドショーを開始
-        setInterval(updateBg, 4000);
 
-        // =========================================
-        // 👆 隠しコマンド：のぞき見機能 (iPhone Safari完全対応)
-        // =========================================
+        // 隠しコマンド（のぞき見機能）
         const triggerPeek = (e) => {
-            // パネルやチャートの上では発動させない
-            if (e.target.closest('.menu-card') || e.target.closest('canvas')) return;
+            if (e.target.closest('.menu-card') || e.target.closest('canvas') || e.target.closest('.docs-btn-subtle') || e.target.closest('.archive-btn')) return;
             document.body.classList.add('view-bg');
         };
         const endPeek = () => document.body.classList.remove('view-bg');
-
-        // iOS Safariの「長押しメニュー」を殺し、自作のぞき見を優先
-        window.addEventListener('touchstart', triggerPeek, { passive: true });
-        window.addEventListener('touchend', endPeek, { passive: true });
-        window.addEventListener('mousedown', triggerPeek);
-        window.addEventListener('mouseup', endPeek);
-        // 右クリックメニュー禁止（隠しコマンド保護）
+        window.addEventListener('touchstart', triggerPeek, { passive: true }); window.addEventListener('touchend', endPeek, { passive: true });
+        window.addEventListener('mousedown', triggerPeek); window.addEventListener('mouseup', endPeek);
         window.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); return false; };
     </script>
 </body>

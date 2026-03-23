@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>観察力（異常検知）測定 - DATA NOISE FILTER</title>
+    <style>
+        /* =========================================
+           1. 基本設定＆カラーパレット
+           ========================================= */
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f172a, #1e1b4b, #0f172a);
+            --glass-bg: rgba(15, 23, 42, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --text-main: #f8fafc;
+            --accent-color: #0ea5e9; 
+            --accent-glow: rgba(14, 165, 233, 0.6);
+            --danger-color: #ef4444;
+            --danger-glow: rgba(239, 68, 68, 0.6);
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Helvetica Neue', Arial, sans-serif; user-select: none; }
+        
+        body { 
+            background-color: #000; color: var(--text-main); 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            min-height: 100dvh; height: 100dvh; 
+            padding: 0; overflow: hidden; -webkit-text-size-adjust: 100%; touch-action: manipulation; 
+        }
+
+        /* 背景クロスフェード用レイヤー */
+        #bgContainer { position: fixed !important; inset: 0 !important; width: 100% !important; height: 100dvh !important; z-index: -2; pointer-events: none; overflow: hidden; }
+        .bg-layer { position: absolute; inset: 0; width: 100%; height: 100%; background-size: cover; background-position: center center; background-repeat: no-repeat; filter: blur(20px) brightness(0.4); transform: scale(1.1); transition: opacity 1.5s ease-in-out; will-change: opacity; opacity: 0; }
+        
+        .scanlines { position: fixed; inset: 0; z-index: -1; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%); background-size: 100% 4px; pointer-events: none; }
+
+        .back-btn { position: absolute; top: 15px; left: 15px; z-index: 10005; display: inline-flex; align-items: center; gap: 5px; color: #fff; text-decoration: none; font-size: 0.9rem; font-weight: bold; background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 20px; border: 1px solid var(--glass-border); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: all 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+
+        /* =========================================
+           2. ゲームパネル
+           ========================================= */
+        .game-panel {
+            width: 100vw; height: 100dvh; 
+            display: flex; flex-direction: column; position: relative; overflow: hidden;
+        }
+
+        .top-controls { padding: 65px 15px 10px 15px; z-index: 10; flex-shrink: 0; }
+        .status-bar { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; font-size: 1.3rem; font-weight: bold; background: var(--glass-bg); border-radius: 15px; border: 1px solid var(--glass-border); color: #fff; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); max-width: 600px; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .score-display { color: var(--success-color); text-shadow: 0 0 10px var(--success-glow); }
+        .time-display { color: var(--accent-color); font-variant-numeric: tabular-nums; text-shadow: 0 0 10px var(--accent-glow); transition: color 0.3s; }
+        .time-display.danger { color: var(--danger-color); text-shadow: 0 0 15px var(--danger-glow); animation: shake 0.5s infinite; }
+
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-2px); } 75% { transform: translateX(2px); } }
+
+        .play-area { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; width: 100%; max-width: 600px; margin: 0 auto; z-index: 5; }
+
+        .start-msg { position: absolute; font-size: 1.5rem; font-weight: bold; color: var(--text-main); text-shadow: 0 0 15px var(--accent-glow); text-align: center; line-height: 1.5; z-index: 10; transition: opacity 0.3s; pointer-events: none; }
+        .start-msg span { color: var(--accent-color); font-size: 1.8rem; }
+
+        /* 👑 グリッドコンテナ */
+        .grid-container {
+            display: grid; gap: 6px; width: 100%; aspect-ratio: 1/1; max-width: 450px; max-height: 450px;
+            background: rgba(0, 0, 0, 0.3); border-radius: 15px; padding: 10px; border: 1px solid var(--glass-border);
+            opacity: 0; pointer-events: none; transform: scale(0.95); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .grid-container.active { opacity: 1; pointer-events: auto; transform: scale(1); }
+
+        .grid-item {
+            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.8rem; font-weight: bold; color: #cbd5e1; cursor: pointer;
+            transition: all 0.1s; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        .grid-item:active { transform: scale(0.9); background: rgba(255, 255, 255, 0.2); }
+        .grid-item.anomaly { color: #fff; } /* 見た目は同じにするが、正解用のクラス */
+
+        /* ペナルティ・正解エフェクト */
+        .flash-overlay { position: fixed; inset: 0; z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.1s; }
+        .flash-overlay.error { background: var(--danger-color); opacity: 0.3; }
+        .flash-overlay.success { background: var(--success-color); opacity: 0.1; }
+
+        .penalty-text { position: absolute; color: var(--danger-color); font-size: 3rem; font-weight: bold; text-shadow: 0 0 20px var(--danger-glow); pointer-events: none; opacity: 0; z-index: 100; font-variant-numeric: tabular-nums; }
+        .penalty-text.show { animation: floatPenalty 0.8s forwards; }
+        @keyframes floatPenalty { 0% { transform: translateY(0) scale(0.5); opacity: 1; } 100% { transform: translateY(-50px) scale(1.5); opacity: 0; } }
+
+        .start-btn { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); padding: 18px 50px; border: none; border-radius: 50px; font-size: 1.4rem; font-weight: bold; color: #fff; background: var(--accent-color); cursor: pointer; box-shadow: 0 4px 20px var(--accent-glow); letter-spacing: 2px; z-index: 60; transition: transform 0.1s; white-space: nowrap; }
+        .start-btn:active { transform: translate(-50%, 2px); }
+
+        /* =========================================
+           3. リザルト画面
+           ========================================= */
+        .result-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(15px); display: none; flex-direction: column; align-items: center; justify-content: flex-start; overflow-y: auto; z-index: 10002; padding: 70px 15px 40px 15px; opacity: 0; transition: opacity 0.5s; }
+        .result-overlay.show { display: flex; opacity: 1; }
+        .result-title { font-size: 1.2rem; color: #94a3b8; margin-bottom: 5px; }
+        .result-score { font-size: 5rem; font-weight: bold; color: #fff; text-shadow: 0 0 20px var(--accent-glow); margin-bottom: 30px; line-height: 1; }
+        .result-score span { font-size: 2rem; color: #94a3b8; }
+        .rank-stamp { font-size: 3rem; font-weight: bold; border: 4px solid; border-radius: 12px; padding: 10px 20px; margin-bottom: 40px; transform: scale(3); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .rank-stamp.drop { transform: scale(1) rotate(-5deg); opacity: 1; }
+        .btn-group { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 350px; margin-top: auto; margin-bottom: 10px; }
+        .cta-btn { width: 100%; padding: 15px; background: var(--accent-color); color: #fff; border-radius: 50px; font-weight: bold; font-size: 1.05rem; text-align: center; text-decoration: none; border: none; cursor: pointer; box-shadow: 0 4px 15px var(--accent-glow); transition: transform 0.1s; }
+        .cta-btn:active { transform: translateY(2px); }
+        .cta-btn-outline { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); box-shadow: none; }
+
+        @media (min-width: 769px) {
+            .grid-container { max-width: 550px; max-height: 550px; }
+            .grid-item { font-size: 2.5rem; }
+            .result-score { font-size: 8rem; }
+            .rank-stamp { font-size: 5rem; border-width: 6px; }
+            .btn-group { max-width: 450px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="bgContainer">
+        <div class="bg-layer" id="bg1"></div>
+        <div class="bg-layer" id="bg2"></div>
+    </div>
+    <div class="scanlines"></div>
+    <div class="flash-overlay" id="flashOverlay"></div>
+    <div class="penalty-text" id="penaltyText">-3.0s</div>
+
+    <a href="index.html" class="back-btn">⬅ ポータルへ戻る</a>
+
+    <div class="game-panel">
+        <div class="top-controls">
+            <div class="status-bar">
+                <div class="score-display">SCORE: <span id="scoreDisplay">0</span></div>
+                <div class="time-display" id="timeDisplay">30.00</div>
+            </div>
+        </div>
+
+        <div class="play-area">
+            <div class="start-msg" id="startMsg">
+                大量のデータから<br><span>1つのノイズ</span>を見抜け<br><br><span style="font-size:1rem; color:var(--text-sub);">※誤タップは -3秒ペナルティ</span>
+            </div>
+            <div class="grid-container" id="gridContainer"></div>
+        </div>
+
+        <button class="start-btn" id="startBtn">FILTERING START</button>
+
+        <div class="result-overlay" id="resultOverlay">
+            <div class="result-title">解析完了（検出ノイズ数）</div>
+            <div class="result-score" id="resultScore">0 <span>pts</span></div>
+            <div class="rank-stamp" id="rankStamp">RANK ---</div>
+            <div class="btn-group">
+                <button class="cta-btn cta-btn-outline" id="retryBtn">もう一度解析する</button>
+                <a href="index.html" class="cta-btn">📊 レーダーチャートを確認</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =========================================
+        // 🖼️ 背景デバイス判定＆クロスフェード
+        // =========================================
+        function getDevicePath() { return window.innerWidth <= 768 ? 'bg/sp/' : 'bg/pc/'; }
+        
+        const bgs = [document.getElementById('bg1'), document.getElementById('bg2')];
+        let currentBgIdx = 0;
+
+        function initAppBg() {
+            const folder = getDevicePath();
+            bgs[0].style.backgroundImage = `url('${folder}bg (${Math.floor(Math.random() * 100) + 1}).webp')`;
+            bgs[0].style.opacity = 1; bgs[0].style.zIndex = 1;
+            bgs[1].style.opacity = 0; bgs[1].style.zIndex = 0;
+        }
+
+        function updateBg() {
+            const nextIdx = (currentBgIdx + 1) % 2;
+            const folder = getDevicePath();
+            const img = new Image();
+            img.src = `${folder}bg (${Math.floor(Math.random() * 100) + 1}).webp`;
+            img.onload = () => {
+                bgs[nextIdx].style.backgroundImage = `url('${img.src}')`;
+                bgs[nextIdx].style.zIndex = 1; bgs[currentBgIdx].style.zIndex = 0;
+                bgs[nextIdx].style.opacity = 1; bgs[currentBgIdx].style.opacity = 0;
+                currentBgIdx = nextIdx;
+            };
+        }
+        initAppBg(); setInterval(updateBg, 6000);
+
+        // =========================================
+        // 🔧 Audio Engine
+        // =========================================
+        const Engine = {
+            ctx: null,
+            init() { if (!this.ctx) { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); if(this.ctx.state === 'suspended') this.ctx.resume(); } },
+            playSuccess() {
+                if(!this.ctx) return;
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.type = 'sine'; osc.frequency.setValueAtTime(800, this.ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(1200, this.ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+                osc.start(); osc.stop(this.ctx.currentTime + 0.1);
+            },
+            playError() {
+                if(!this.ctx) return;
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, this.ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(80, this.ctx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime); gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+                osc.start(); osc.stop(this.ctx.currentTime + 0.2);
+            }
+        };
+
+        // =========================================
+        // 🔍 観察力ゲームロジック
+        // =========================================
+        const ObserveGame = {
+            state: 'idle', // idle, playing, ended
+            score: 0,
+            timeLeft: 30.000,
+            timerId: null,
+            lastTick: 0,
+            
+           // 👑 慣れを許さない！類似文字グループ（毎回この中からランダムに2つ選出）
+            charGroups: [
+                // 遺伝子・塩基配列系
+                ['A', 'T', 'G', 'C', 'U'],
+                // ギリシャ文字・数式系
+                ['α', 'a', 'σ'], ['β', 'B'], ['γ', 'r', 'v'], ['μ', 'u'], ['θ', 'O', 'Q'], ['Σ', 'E'], ['Δ', 'A'],
+                // 化学式・元素系
+                ['Co', 'Ca', 'Cu'], ['Mn', 'Mg'], ['Sn', 'Sm', 'Sb'],
+                // 似た漢字（論文頻出）
+                ['微', '徴'], ['特', '持'], ['析', '折'], ['験', '検'], ['論', '輪'], ['測', '側'], ['果', '菓'],
+                // アルファベット・数字のゲシュタルト崩壊
+                ['O', 'Q', '0', 'C', 'G', 'D'], ['1', 'I', 'l', '|', '7'], ['8', 'B', '3'], ['5', 'S'], ['2', 'Z'], ['M', 'W', 'N'], ['p', 'q', 'b', 'd'],
+                // 記号・絵文字
+                ['🔬', '🔭', '🔍'], ['🧬', '🧪', '🩸'], ['📈', '📉', '📊'], ['+', '-', '×', '÷'], ['=', '≠', '≒']
+            ],
+
+            ranks: [
+                {req: 30, n: "S級 神", c: "#10b981"}, 
+                {req: 20, n: "A級 達人", c: "#0ea5e9"}, 
+                {req: 15, n: "B級 プロ", c: "#8b5cf6"},
+                {req: 10,  n: "C級 一般人", c: "#f59e0b"}, 
+                {req: 0,  n: "D級 素人",   c: "#ef4444"}
+            ],
+
+            els: {
+                startBtn: document.getElementById('startBtn'), msg: document.getElementById('startMsg'),
+                grid: document.getElementById('gridContainer'), score: document.getElementById('scoreDisplay'),
+                time: document.getElementById('timeDisplay'), flash: document.getElementById('flashOverlay'),
+                penalty: document.getElementById('penaltyText'), over: document.getElementById('resultOverlay'),
+                rScore: document.getElementById('resultScore'), stamp: document.getElementById('rankStamp')
+            },
+
+            init() {
+                this.state = 'idle'; this.score = 0; this.timeLeft = 30.000;
+                this.els.score.textContent = this.score;
+                this.els.time.textContent = this.timeLeft.toFixed(2);
+                this.els.time.classList.remove('danger');
+                this.els.grid.classList.remove('active');
+                this.els.grid.innerHTML = '';
+                this.els.msg.style.opacity = 1;
+                this.els.btn.style.display = 'block';
+                this.els.over.classList.remove('show');
+                this.els.stamp.classList.remove('drop');
+            },
+
+            start() {
+                Engine.init();
+                this.state = 'playing';
+                this.els.btn.style.display = 'none';
+                this.els.msg.style.opacity = 0;
+                this.els.grid.classList.add('active');
+                
+                this.lastTick = performance.now();
+                this.timerId = requestAnimationFrame((t) => this.tick(t));
+                
+                this.generateGrid();
+            },
+
+            tick(now) {
+                if(this.state !== 'playing') return;
+                const delta = (now - this.lastTick) / 1000;
+                this.lastTick = now;
+                this.timeLeft -= delta;
+
+                if(this.timeLeft <= 5) this.els.time.classList.add('danger');
+                else this.els.time.classList.remove('danger');
+
+                if (this.timeLeft <= 0) {
+                    this.timeLeft = 0;
+                    this.els.time.textContent = "0.00";
+                    this.end();
+                } else {
+                    this.els.time.textContent = this.timeLeft.toFixed(2);
+                    this.timerId = requestAnimationFrame((t) => this.tick(t));
+                }
+            },
+
+            generateGrid() {
+                this.els.grid.innerHTML = '';
+                // レベルに応じてグリッドサイズを拡張 (最大7x7)
+                let size = 2 + Math.floor(this.score / 5); 
+                if (size > 7) size = 7;
+                
+                this.els.grid.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+                
+                const totalCells = size * size;
+                
+                // 👑 グループをランダムに選び、その中から2つをシャッフルして抽出
+                const group = this.charGroups[Math.floor(Math.random() * this.charGroups.length)];
+                const shuffledGroup = [...group].sort(() => 0.5 - Math.random());
+                const normalChar = shuffledGroup[0];
+                const anomalyChar = shuffledGroup[1]; 
+                
+                const anomalyIndex = Math.floor(Math.random() * totalCells);
+
+                // フォントサイズをセルの数に応じて調整
+                const fontSize = size >= 6 ? '1.2rem' : (size >= 4 ? '1.5rem' : '2.2rem');
+
+                for (let i = 0; i < totalCells; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-item';
+                    cell.style.fontSize = fontSize;
+                    
+                    if (i === anomalyIndex) {
+                        cell.textContent = anomalyChar;
+                        cell.classList.add('anomaly');
+                        // 正解タップ
+                        const hitAction = (e) => { e.preventDefault(); if(this.state==='playing') this.handleHit(true); };
+                        cell.addEventListener('touchstart', hitAction, {passive: false});
+                        cell.addEventListener('mousedown', hitAction);
+                    } else {
+                        cell.textContent = normalChar;
+                        // 不正解タップ
+                        const missAction = (e) => { e.preventDefault(); if(this.state==='playing') this.handleHit(false, e); };
+                        cell.addEventListener('touchstart', missAction, {passive: false});
+                        cell.addEventListener('mousedown', missAction);
+                    }
+                    this.els.grid.appendChild(cell);
+                }
+            },
+
+            handleHit(isCorrect, event = null) {
+                if(isCorrect) {
+                    Engine.playSuccess();
+                    this.score++;
+                    this.els.score.textContent = this.score;
+                    this.flashScreen('success');
+                    this.generateGrid();
+                } else {
+                    Engine.playError();
+                    this.timeLeft -= 3; // 3秒ペナルティ
+                    this.flashScreen('error');
+                    
+                    // ペナルティの文字をタップした位置に浮かび上がらせる
+                    if(event) {
+                        let x = event.clientX || (event.touches && event.touches[0].clientX) || window.innerWidth/2; 
+                        let y = event.clientY || (event.touches && event.touches[0].clientY) || window.innerHeight/2;
+                        this.els.penalty.style.left = `${x - 40}px`;
+                        this.els.penalty.style.top = `${y - 20}px`;
+                        this.els.penalty.classList.remove('show');
+                        void this.els.penalty.offsetWidth; // reflow
+                        this.els.penalty.classList.add('show');
+                    }
+                }
+            },
+
+            flashScreen(type) {
+                this.els.flash.className = `flash-overlay ${type}`;
+                setTimeout(() => this.els.flash.className = 'flash-overlay', 100);
+            },
+
+            end() {
+                this.state = 'ended';
+                cancelAnimationFrame(this.timerId);
+                this.els.grid.classList.remove('active');
+                
+                // ローカルストレージに最高スコアを保存
+                let currentBest = parseInt(localStorage.getItem('b_obs') || 0);
+                if (this.score > currentBest) localStorage.setItem('b_obs', this.score);
+
+                // ランク判定
+                let rank = this.ranks[this.ranks.length-1];
+                for(let r of this.ranks) { if(this.score >= r.req) { rank = r; break; } }
+
+                this.els.rScore.innerHTML = `${this.score} <span>pts</span>`;
+                this.els.stamp.textContent = `RANK: ${rank.n}`;
+                this.els.stamp.style.color = rank.c;
+                this.els.stamp.style.borderColor = rank.c;
+                this.els.stamp.style.textShadow = `0 0 30px ${rank.c}`;
+
+                setTimeout(() => {
+                    this.els.over.classList.add('show');
+                    setTimeout(() => this.els.stamp.classList.add('drop'), 300);
+                }, 500);
+            }
+        };
+
+        ObserveGame.els.startBtn.addEventListener('click', () => ObserveGame.start());
+        document.getElementById('retryBtn').addEventListener('click', () => ObserveGame.init());
+
+        // 変数バインディング（JS内で使うためels.btnのエイリアスを追加）
+        ObserveGame.els.btn = ObserveGame.els.startBtn;
+        
+        window.onload = () => ObserveGame.init();
+    </script>
+</body>
+</html>
