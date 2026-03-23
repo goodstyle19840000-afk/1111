@@ -24,133 +24,108 @@
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Helvetica Neue', Arial, sans-serif; user-select: none; -webkit-touch-callout: none; }
         
-        body { background: var(--bg-gradient); color: var(--text-main); min-height: 100dvh; overflow-x: hidden; display: flex; flex-direction: column; align-items: center; padding-bottom: 100px; /* フッターボタン用 */ }
+        body { background: var(--bg-gradient); color: var(--text-main); min-height: 100dvh; overflow-x: hidden; display: flex; flex-direction: column; align-items: center; padding-bottom: 120px; scroll-behavior: smooth; }
         .scanlines { position: fixed; inset: 0; z-index: -1; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%); background-size: 100% 4px; pointer-events: none; }
 
         /* =========================================
            2. ヘッダー＆コントロール
            ========================================= */
-        .top-nav { width: 100%; max-width: 1000px; padding: 20px 15px; display: flex; justify-content: space-between; align-items: center; z-index: 10; }
-        .back-btn { display: inline-flex; align-items: center; gap: 5px; color: #fff; text-decoration: none; font-size: 0.9rem; font-weight: bold; background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 20px; border: 1px solid var(--glass-border); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: all 0.2s; }
+        .top-nav { width: 100%; max-width: 1000px; padding: 20px 15px; display: flex; justify-content: space-between; align-items: center; z-index: 10; position: sticky; top: 0; background: linear-gradient(to bottom, var(--bg-dark), transparent); backdrop-filter: blur(5px); }
+        .back-btn { display: inline-flex; align-items: center; gap: 5px; color: #fff; text-decoration: none; font-size: 0.9rem; font-weight: bold; background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 20px; border: 1px solid var(--glass-border); backdrop-filter: blur(8px); transition: all 0.2s; }
         .back-btn:active { transform: scale(0.95); }
 
         .ap-display { background: rgba(14, 165, 233, 0.15); border: 1px solid var(--accent-color); padding: 8px 18px; border-radius: 20px; font-weight: bold; color: #fff; text-shadow: 0 0 10px var(--accent-glow); box-shadow: 0 0 15px rgba(14, 165, 233, 0.3); font-size: 0.9rem; }
         .ap-display span { color: var(--accent-color); font-size: 1.2rem; margin-right: 5px; font-variant-numeric: tabular-nums; }
 
         .dashboard { width: 100%; max-width: 1000px; padding: 0 15px 15px; display: flex; flex-direction: column; gap: 15px; z-index: 10; }
-        .control-panel { background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 20px; padding: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); gap: 15px; }
+        .control-panel { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 20px; padding: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); gap: 15px; }
         @media (max-width: 600px) { .control-panel { flex-direction: column; text-align: center; } }
-
+        
         .control-info h2 { font-size: 1.2rem; margin-bottom: 5px; }
         .control-info p { font-size: 0.85rem; color: var(--text-dim); }
-        .btn-group { display: flex; gap: 10px; flex-shrink: 0; }
-        .action-btn { padding: 12px 20px; border-radius: 12px; font-weight: bold; border: none; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 5px; font-size: 0.9rem; }
-        .reset-btn { background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border); }
-        .reset-btn:hover { background: rgba(255,255,255,0.1); }
+        .reset-btn { background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border); padding: 12px 20px; border-radius: 12px; font-weight: bold; cursor: pointer; transition: all 0.2s; }
+        .reset-btn:active { transform: scale(0.95); }
 
         /* =========================================
-           3. ギャラリー・グリッド
+           3. 👑 フリップ・ギャラリー・グリッド
            ========================================= */
         .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; width: 100%; max-width: 1000px; padding: 0 15px 20px; z-index: 10; }
         @media (min-width: 600px) { .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 15px; } }
 
-        .gallery-item { aspect-ratio: 9/16; border-radius: 12px; overflow: hidden; position: relative; cursor: pointer; background: #010409; border: 1px solid var(--glass-border); box-shadow: 0 5px 15px rgba(0,0,0,0.4); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.3s; }
-        .gallery-item:not(.locked):hover { transform: translateY(-5px) scale(1.03); border-color: var(--accent-color); box-shadow: 0 10px 25px rgba(14, 165, 233, 0.4); }
+        /* カードの3Dフリップ設定 */
+        .gallery-item { aspect-ratio: 9/16; perspective: 1000px; cursor: pointer; }
         @media (min-width: 769px) { .gallery-item { aspect-ratio: 16/9; } }
 
-        .gallery-item img { width: 100%; height: 100%; object-fit: cover; opacity: 0.6; transition: opacity 0.3s; }
-        .gallery-item:not(.locked):hover img { opacity: 1; }
-
-        .gallery-item.locked { cursor: not-allowed; border-style: dashed; border-color: #334155; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #475569; }
+        .item-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-style: preserve-3d; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.4); border: 1px solid var(--glass-border); }
+        
+        /* 解放されたら裏返る */
+        .gallery-item.unlocked .item-inner { transform: rotateY(180deg); cursor: pointer; }
+        .gallery-item.unlocked:hover .item-inner { border-color: var(--accent-color); box-shadow: 0 10px 25px rgba(14, 165, 233, 0.4); transform: rotateY(180deg) scale(1.03) translateY(-5px); }
+        
+        .item-front, .item-back { position: absolute; inset: 0; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; border-radius: 12px; overflow: hidden; }
+        
+        /* 表面（未解放ロック状態） */
+        .item-front { background: #010409; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #475569; border-style: dashed; border-width: 2px; border-color: #334155; }
         .locked-icon { font-size: 1.8rem; margin-bottom: 5px; opacity: 0.4; }
         .locked-id { font-size: 0.7rem; font-weight: bold; letter-spacing: 1px; }
 
-        .gallery-item.active { border: 2px solid var(--success-color); box-shadow: 0 0 20px var(--success-glow); }
-        .gallery-item.active img { opacity: 1; }
-        .gallery-item.active::after { content: '✓ FIXED'; position: absolute; top: 8px; right: 8px; background: var(--success-color); color: #fff; font-size: 0.6rem; font-weight: bold; padding: 3px 8px; border-radius: 5px; }
+        /* 裏面（画像表示状態） */
+        .item-back { background: #000; transform: rotateY(180deg); }
+        .item-back img { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; transition: opacity 0.3s; }
+        .gallery-item.unlocked:hover .item-back img { opacity: 1; }
+
+        /* 固定中のバッジ */
+        .gallery-item.active .item-inner { border: 2px solid var(--success-color); box-shadow: 0 0 20px var(--success-glow); }
+        .gallery-item.active .item-back img { opacity: 1; }
+        .gallery-item.active .item-back::after { content: '✓ FIXED'; position: absolute; top: 8px; right: 8px; background: var(--success-color); color: #fff; font-size: 0.6rem; font-weight: bold; padding: 3px 8px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+
+        /* 👑 当たった瞬間のサクセス・フラッシュ */
+        .flash-effect .item-inner { animation: successFlash 1.5s ease-out forwards; }
+        @keyframes successFlash {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); border-color: transparent; }
+            30% { box-shadow: 0 0 30px 15px rgba(16, 185, 129, 0.9); border-color: #10b981; }
+            100% { box-shadow: 0 0 10px 0 rgba(16, 185, 129, 0.2); border-color: var(--glass-border); }
+        }
 
         /* =========================================
-           4. 👑 固定ガチャボタン（最下部）
+           4. 👑 超サクサク・ガチャボタン（1回 ＆ 10連）
            ========================================= */
-        .gacha-footer { position: fixed; bottom: 0; left: 0; width: 100%; padding: 20px; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); z-index: 1000; display: flex; justify-content: center; border-top: 1px solid var(--glass-border); }
-        .gacha-btn-fixed { width: 100%; max-width: 500px; padding: 20px; border-radius: 50px; font-size: 1.3rem; font-weight: bold; color: #fff; background: var(--success-color); border: 2px solid rgba(255,255,255,0.4); box-shadow: 0 5px 25px var(--success-glow); cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 12px; text-shadow: 0 1px 3px rgba(0,0,0,0.3); }
-        .gacha-btn-fixed:not(:disabled):hover { background: #15d192; transform: translateY(-3px); box-shadow: 0 8px 30px var(--success-glow); }
-        .gacha-btn-fixed:active { transform: translateY(1px) scale(0.98); }
-        .gacha-btn-fixed:disabled { background: #334155; color: #94a3b8; box-shadow: none; cursor: not-allowed; border-color: transparent; }
-        .gacha-btn-fixed .btn-icon { font-size: 1.4rem; }
+        .gacha-footer { position: fixed; bottom: 0; left: 0; width: 100%; padding: 15px; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); z-index: 1000; display: flex; justify-content: center; border-top: 1px solid var(--glass-border); }
+        .gacha-btn-group { display: flex; gap: 10px; width: 100%; max-width: 600px; }
+        
+        .gacha-btn { flex: 1; padding: 18px 10px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; color: #fff; cursor: pointer; transition: all 0.1s; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 2px solid rgba(255,255,255,0.3); text-shadow: 0 1px 3px rgba(0,0,0,0.4); line-height: 1.2; }
+        .gacha-btn:active { transform: scale(0.96); }
+        .gacha-btn:disabled { background: #334155 !important; color: #94a3b8 !important; box-shadow: none !important; cursor: not-allowed; border-color: transparent !important; }
+        
+        .btn-single { background: var(--accent-color); box-shadow: 0 5px 20px var(--accent-glow); }
+        .btn-single:not(:disabled):hover { background: #0284c7; box-shadow: 0 8px 25px var(--accent-glow); transform: translateY(-3px); }
+        
+        .btn-multi { background: var(--warning-color); box-shadow: 0 5px 20px rgba(245, 158, 11, 0.5); }
+        .btn-multi:not(:disabled):hover { background: #d97706; box-shadow: 0 8px 25px rgba(245, 158, 11, 0.6); transform: translateY(-3px); }
+        
+        .gacha-cost { font-size: 0.75rem; font-weight: normal; opacity: 0.9; }
 
         /* =========================================
-           5. 👑 ド派手モーダル＆100%動くCSS演出
+           5. プレビュー＆固定用シンプルモーダル（演出なし）
            ========================================= */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.92); z-index: 10000; display: none; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; padding: 20px; pointer-events: none; }
-        .modal-overlay.show { display: flex; opacity: 1; pointer-events: auto; }
-
-        .modal-content { width: 100%; max-width: 600px; display: flex; flex-direction: column; gap: 15px; align-items: center; z-index: 10; transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.9); z-index: 10000; display: none; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; padding: 20px; }
+        .modal-overlay.show { display: flex; opacity: 1; }
+        .modal-content { width: 100%; max-width: 700px; display: flex; flex-direction: column; gap: 15px; align-items: center; transform: scale(0.95); transition: transform 0.2s; }
         .modal-overlay.show .modal-content { transform: scale(1); }
-
-        .image-container { position: relative; width: 100%; border-radius: 20px; overflow: hidden; border: 2px solid var(--glass-border); background: #000; box-shadow: 0 10px 50px rgba(0,0,0,0.8); transition: border-color 0.5s, box-shadow 0.5s; }
-        .modal-overlay.decoded .image-container { border-color: var(--success-color); box-shadow: 0 0 30px var(--success-glow), inset 0 0 15px var(--success-glow); }
-
-        .modal-img { width: 100%; max-height: 70vh; object-fit: contain; display: block; opacity: 0; will-change: transform, filter; }
-        /* 画像復元アニメーション（フラッシュ後） */
-        .modal-overlay.decoded .modal-img { animation: imageRestore 0.7s cubic-bezier(0.23, 1, 0.32, 1) forwards; }
-
-        .modal-actions { display: flex; gap: 12px; width: 100%; opacity: 0; transform: translateY(20px); transition: all 0.4s 0.3s; }
-        .modal-overlay.decoded .modal-actions { opacity: 1; transform: translateY(0); }
-
-        .modal-btn { flex: 1; padding: 16px; border-radius: 50px; font-weight: bold; border: none; cursor: pointer; font-size: 1rem; transition: all 0.2s; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
-        .modal-btn:active { transform: scale(0.96); }
-        .btn-set { background: var(--success-color); color: #fff; box-shadow: 0 4px 15px var(--success-glow); border: 2px solid rgba(255,255,255,0.3); }
-        .btn-close { background: rgba(255,255,255,0.08); color: #fff; border: 1px solid var(--glass-border); }
-
-        /* =========================================
-           👑 量子デコード演出（100%動くCSS全振り）
-           ========================================= */
-        .decoding-screen { position: absolute; inset: 0; background: #000; z-index: 20; display: none; flex-direction: column; align-items: center; justify-content: center; color: var(--accent-color); overflow: hidden; }
-        .decoding-screen.active { display: flex; }
-
-        /* 👑 収束する光のリング（CSS） */
-        .cyber-ring-css { position: absolute; width: 300px; height: 300px; border-radius: 50%; border: 2px solid var(--accent-color); box-shadow: 0 0 20px var(--accent-color), inset 0 0 20px var(--accent-color); animation: ringCharge 1s cubic-bezier(0.4, 0, 0.2, 1) forwards; opacity: 0; will-change: transform, opacity; }
-        @keyframes ringCharge { 0% { transform: scale(2); opacity: 0; } 50% { opacity: 1; } 100% { transform: scale(0.5); opacity: 0; } }
-
-        .decode-info { position: relative; z-index: 30; text-align: center; }
-        /* 👑 グリッチテキスト */
-        .decode-text { font-size: 2.5rem; font-weight: 900; color: #fff; text-shadow: 0 0 10px #fff, 0 0 20px var(--accent-color); animation: textGlitch 0.5s step-end infinite; letter-spacing: 4px; line-height: 1.2; opacity: 0.9; }
-        
-        @keyframes textGlitch { 
-            0%, 100% { transform: translate(0,0); text-shadow: 0 0 10px #fff; }
-            20% { transform: translate(-3px, 2px); color: var(--warning-color); text-shadow: 2px 0 var(--danger-color); }
-            40% { transform: translate(3px, -2px); color: var(--success-color); text-shadow: -2px 0 var(--accent-color); }
-            60% { transform: translate(-1px, -1px); filter: blur(1px); }
-            80% { transform: translate(2px, 1px); opacity: 0.5; }
-        }
-
-        .random-hash { font-family: monospace; margin-top: 20px; font-size: 0.9rem; color: var(--accent-color); text-shadow: 0 0 5px var(--accent-color); }
-
-        /* 👑 弾け飛ぶCSSデータ粒子（コンテナ） */
-        .particle-container { position: absolute; inset: 0; pointer-events: none; z-index: 25; }
-        
-        /* 👑 ホワイトフラッシュ */
-        .flash-overlay { position: fixed; inset: 0; background: #fff; z-index: 20000; opacity: 0; pointer-events: none; will-change: opacity; }
-        .flash-overlay.active { animation: flashAnim 0.6s ease-out forwards; }
-        @keyframes flashAnim { 0% { opacity: 1; } 10% { opacity: 1; } 100% { opacity: 0; } }
-
-        /* 画像復元アニメーション */
-        @keyframes imageRestore { 
-            0% { opacity: 0; transform: scale(1.1) translate3d(0,0,0); filter: blur(20px) brightness(4); } 
-            20% { opacity: 1; filter: blur(10px) brightness(2); }
-            100% { opacity: 1; transform: scale(1) translate3d(0,0,0); filter: blur(0) brightness(1); } 
-        }
-
+        .modal-img { width: 100%; max-height: 75vh; object-fit: contain; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); border: 1px solid var(--glass-border); }
+        .modal-actions { display: flex; gap: 12px; width: 100%; }
+        .modal-btn { flex: 1; padding: 16px; border-radius: 50px; font-weight: bold; border: none; cursor: pointer; font-size: 1rem; transition: all 0.2s; }
+        .modal-btn:active { transform: scale(0.95); }
+        .btn-set { background: var(--success-color); color: #fff; box-shadow: 0 4px 15px var(--success-glow); }
+        .btn-close { background: rgba(255,255,255,0.1); color: #fff; border: 1px solid var(--glass-border); }
     </style>
 </head>
 <body>
 
     <div class="scanlines"></div>
-    <div class="flash-overlay" id="flashOverlay"></div>
 
     <div class="top-nav">
-        <a href="index.html" class="back-btn">⬅ ポータルへ戻る</a>
+        <a href="index.html" class="back-btn">⬅ ポータル</a>
         <div class="ap-display"><span id="apAmount">0</span> AP</div>
     </div>
 
@@ -158,11 +133,9 @@
         <div class="control-panel">
             <div class="control-info">
                 <h2>DATA ARCHIVE</h2>
-                <p>解析ポイント(AP)を消費し、量子暗号データを復元します。<br>復元状況: <strong id="unlockCount">0</strong> / 200</p>
+                <p>復元状況: <strong id="unlockCount">0</strong> / 200</p>
             </div>
-            <div class="btn-group">
-                <button class="action-btn reset-btn" id="resetBtn">🔄 ランダム表示に戻す</button>
-            </div>
+            <button class="reset-btn" id="resetBtn">🔄 ランダム表示に戻す</button>
         </div>
     </div>
 
@@ -170,29 +143,22 @@
         </div>
 
     <div class="gacha-footer">
-        <button class="gacha-btn-fixed" id="gachaBtn">
-            <span class="btn-icon">🎲</span> 画像を取得 (100 AP)
-        </button>
+        <div class="gacha-btn-group">
+            <button class="gacha-btn btn-single" id="btnSingle">
+                <div>🎲 1回 取得</div><div class="gacha-cost">100 AP</div>
+            </button>
+            <button class="gacha-btn btn-multi" id="btnMulti">
+                <div>🔥 10連 取得</div><div class="gacha-cost">1000 AP</div>
+            </button>
+        </div>
     </div>
 
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal-content">
-            <div class="image-container">
-                <img src="" class="modal-img" id="modalImg">
-                
-                <div class="decoding-screen" id="decodingScreen">
-                    <div class="cyber-ring-css"></div>
-                    <div class="particle-container" id="particleContainer"></div>
-                    <div class="decode-info">
-                        <div class="decode-text">DECODING</div>
-                        <div id="randomHash" class="random-hash"></div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="modal-actions" id="modalActions">
+            <img src="" class="modal-img" id="modalImg">
+            <div class="modal-actions">
                 <button class="modal-btn btn-close" id="modalClose">✕ 閉じる</button>
-                <button class="modal-btn btn-set" id="modalSet">🖥️ この背景を固定</button>
+                <button class="modal-btn btn-set" id="modalSet">🖥️ 背景に固定</button>
             </div>
         </div>
     </div>
@@ -200,103 +166,35 @@
     <script>
         const TOTAL_IMAGES = 200;
         const GACHA_COST = 100;
+        const MULTI_COST = 1000;
         function getDevicePath() { return window.innerWidth <= 768 ? 'bg/sp/' : 'bg/pc/'; }
 
         // =========================================
-        // 🔧 Audio Engine (iPhone Safari対応)
+        // 🔧 サクサク効果音（小気味良いUIサウンド）
         // =========================================
-        const Engine = {
+        const Sound = {
             ctx: null,
             init() { 
-                try {
-                    if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); 
-                    if (this.ctx.state === 'suspended') this.ctx.resume();
-                } catch(e) { console.warn("Audio Context init failed."); }
+                try { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); 
+                      if (this.ctx.state === 'suspended') this.ctx.resume(); } catch(e){} 
             },
-            // ガチャ開始（チャージ音）
-            playGachaStart() {
+            playFlip() {
                 if(!this.ctx) return;
                 const now = this.ctx.currentTime;
                 const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
                 osc.connect(gain); gain.connect(this.ctx.destination);
-                osc.type = 'sawtooth'; 
-                osc.frequency.setValueAtTime(40, now); osc.frequency.exponentialRampToValueAtTime(200, now + 1.0);
-                gain.gain.setValueAtTime(0, now); gain.gain.linearRampToValueAtTime(0.2, now + 0.1); gain.gain.linearRampToValueAtTime(0, now + 1.1);
-                osc.start(now); osc.stop(now + 1.1);
+                osc.type = 'sine'; osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+                gain.gain.setValueAtTime(0, now); gain.gain.linearRampToValueAtTime(0.1, now + 0.02); gain.gain.linearRampToValueAtTime(0, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
             },
-            // 展開（グリッチ音）
-            playGlitch() {
+            playSuccess() {
                 if(!this.ctx) return;
                 const now = this.ctx.currentTime;
-                for(let i=0; i<3; i++){
-                    const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
-                    osc.connect(gain); gain.connect(this.ctx.destination);
-                    osc.type = 'square'; osc.frequency.setValueAtTime(Math.random()*500 + 100, now + i*0.1);
-                    gain.gain.setValueAtTime(0.1, now + i*0.1); gain.gain.setValueAtTime(0, now + i*0.1 + 0.05);
-                    osc.start(now + i*0.1); osc.stop(now + i*0.1 + 0.05);
-                }
-            },
-            // デコード完了（確定音）
-            playDecoded() {
-                if(!this.ctx) return;
-                const now = this.ctx.currentTime;
-                // シャキーン！
-                const osc1 = this.ctx.createOscillator(), gain1 = this.ctx.createGain();
-                osc1.connect(gain1); gain1.connect(this.ctx.destination);
-                osc1.type = 'sine'; osc1.frequency.setValueAtTime(1600, now); osc1.frequency.exponentialRampToValueAtTime(400, now + 0.15);
-                gain1.gain.setValueAtTime(0.4, now); gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-                osc1.start(now); osc1.stop(now + 0.15);
-                // ズォーン（残響）
-                const osc2 = this.ctx.createOscillator(), gain2 = this.ctx.createGain();
-                osc2.connect(gain2); gain2.connect(this.ctx.destination);
-                osc2.type = 'triangle'; osc2.frequency.setValueAtTime(100, now); osc2.frequency.exponentialRampToValueAtTime(50, now + 0.5);
-                gain2.gain.setValueAtTime(0.3, now); gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-                osc2.start(now); osc2.stop(now + 0.5);
-            }
-        };
-
-        // =========================================
-        // ✨ CSSパーティクル（100%動く連鎖爆発）
-        // =========================================
-        const ParticleSystem = {
-            container: document.getElementById('particleContainer'),
-            timer: null,
-            // 👑 JSで要素を作り、CSSアニメーションを付与する（最強の手法）
-            createParticle() {
-                const p = document.createElement('div');
-                p.style.position = 'absolute';
-                p.style.width = p.style.height = `${Math.random() * 8 + 4}px`;
-                p.style.background = Math.random() > 0.3 ? '#0ea5e9' : '#fff';
-                p.style.borderRadius = '2px'; // データチップ風
-                p.style.top = '50%'; p.style.left = '50%';
-                if(Math.random() > 0.5) p.style.boxShadow = `0 0 10px ${p.style.background}`;
-
-                // ランダムな飛び散り方向（ハードウェアアクセラレーション）
-                const angle = Math.random() * Math.PI * 2;
-                const dist = Math.random() * 150 + 100;
-                const tx = Math.cos(angle) * dist;
-                const ty = Math.sin(angle) * dist;
-                const duration = Math.random() * 0.5 + 0.5;
-
-                // 👑 Web Animations API（CSSよりもさらに確実に動く）
-                p.animate([
-                    { transform: `translate(-50%, -50%) translate3d(0,0,0) rotate(0deg)`, opacity: 1 },
-                    { transform: `translate(-50%, -50%) translate3d(${tx}px, ${ty}px, 0) rotate(${Math.random()*360}deg)`, opacity: 0 }
-                ], {
-                    duration: duration * 1000,
-                    easing: 'cubic-bezier(0.165, 0.84, 0.44, 1)'
-                });
-
-                this.container.appendChild(p);
-                setTimeout(() => p.remove(), duration * 1000);
-            },
-            start() {
-                this.timer = setInterval(() => {
-                    for(let i=0; i<5; i++) this.createParticle();
-                }, 100); // 0.1秒ごとに5個生成（激しい爆発）
-            },
-            stop() {
-                clearInterval(this.timer);
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(1200, now); osc.frequency.exponentialRampToValueAtTime(600, now + 0.2);
+                gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
             }
         };
 
@@ -309,152 +207,164 @@
 
         const els = {
             ap: document.getElementById('apAmount'), count: document.getElementById('unlockCount'),
-            grid: document.getElementById('galleryGrid'), gachaBtn: document.getElementById('gachaBtn'),
-            resetBtn: document.getElementById('resetBtn'), modal: document.getElementById('modalOverlay'),
-            img: document.getElementById('modalImg'), set: document.getElementById('modalSet'),
-            close: document.getElementById('modalClose'), decode: document.getElementById('decodingScreen'),
-            hash: document.getElementById('randomHash'), flash: document.getElementById('flashOverlay'),
-            particleContainer: document.getElementById('particleContainer')
+            grid: document.getElementById('galleryGrid'), 
+            btnSingle: document.getElementById('btnSingle'), btnMulti: document.getElementById('btnMulti'),
+            resetBtn: document.getElementById('resetBtn'), 
+            modal: document.getElementById('modalOverlay'), img: document.getElementById('modalImg'), 
+            set: document.getElementById('modalSet'), close: document.getElementById('modalClose')
         };
 
         function updateUI() {
             els.ap.textContent = currentAP;
             els.count.textContent = unlockedBgs.length;
-            els.gachaBtn.disabled = (currentAP < GACHA_COST || unlockedBgs.length >= TOTAL_IMAGES);
-            if (unlockedBgs.length >= TOTAL_IMAGES) els.gachaBtn.innerHTML = "🚫 全データ復元完了";
+            const remaining = TOTAL_IMAGES - unlockedBgs.length;
+            
+            els.btnSingle.disabled = (currentAP < GACHA_COST || remaining < 1);
+            if (remaining < 1) els.btnSingle.innerHTML = "🚫 コンプリート";
+
+            // 10連ボタンは「AP1000以上」かつ「残り10個以上」の時のみ有効
+            els.btnMulti.disabled = (currentAP < MULTI_COST || remaining < 10);
+            if (remaining < 10) els.btnMulti.innerHTML = "🚫 10連不可";
         }
 
-        function renderGrid() {
+        // 👑 初期グリッドの生成（裏表構造のカードを作る）
+        function initGrid() {
             els.grid.innerHTML = '';
             const folder = getDevicePath();
             for (let i = 1; i <= TOTAL_IMAGES; i++) {
                 const item = document.createElement('div');
                 item.className = 'gallery-item';
+                item.id = `card-${i}`;
+
+                const inner = document.createElement('div');
+                inner.className = 'item-inner';
+
+                const front = document.createElement('div');
+                front.className = 'item-front';
+                front.innerHTML = `<div class="locked-icon">🔒</div><div class="locked-id">No.${i.toString().padStart(3, '0')}</div>`;
+
+                const back = document.createElement('div');
+                back.className = 'item-back';
+
+                // すでに解放済みの場合は画像を入れて、裏返しておく
                 if (unlockedBgs.includes(i)) {
+                    item.classList.add('unlocked');
                     if (fixedBg == i) item.classList.add('active');
-                    const img = document.createElement('img');
-                    img.src = `${folder}bg (${i}).webp`; img.loading = "lazy";
-                    item.appendChild(img);
-                    item.addEventListener('click', () => openModal(i, img.src));
-                } else {
-                    item.classList.add('locked');
-                    item.innerHTML = `<div class="locked-icon">🔒</div><div class="locked-id">No.${i.toString().padStart(3, '0')}</div>`;
+                    back.innerHTML = `<img src="${folder}bg (${i}).webp" loading="lazy">`;
+                    
+                    // 解放済みカードをクリックしたらプレビューを開く
+                    item.addEventListener('click', () => openPreview(i, `${folder}bg (${i}).webp`));
                 }
+
+                inner.appendChild(front);
+                inner.appendChild(back);
+                item.appendChild(inner);
                 els.grid.appendChild(item);
             }
         }
 
         // =========================================
-        // 👑 モーダル ＆ ド派手ガチャ演出 (Safari対応)
+        // 👑 爆速フリップ・ガチャ実行ロジック
         // =========================================
-        let currentSelectedId = null;
-        let hashInterval = null;
+        function executeGacha(times) {
+            Sound.init();
 
-        function openModal(id, src, isGacha = false) {
-            currentSelectedId = id;
-            els.modal.classList.add('show');
-            els.modal.classList.remove('decoded');
-            els.img.style.opacity = '0'; // 画像は初期隠す
-
-            if (isGacha) {
-                // 👑 ガチャ演出（CSS全振り）
-                els.decode.classList.add('active');
-                
-                // チャージ演出（1秒）
-                els.particleContainer.innerHTML = ''; // クリア
-                ParticleSystem.start();
-                
-                // ハッシュダミー
-                hashInterval = setInterval(() => {
-                    els.hash.textContent = '0x' + Math.random().toString(16).substring(2, 12).toUpperCase();
-                }, 50);
-
-                // 音響演出のタイムライン
-                setTimeout(() => Engine.playGlitch(), 1000); // 1秒後にグリッチ音
-
-                // 1.5秒後に確定
-                setTimeout(() => {
-                    clearInterval(hashInterval);
-                    ParticleSystem.stop();
-                    els.decode.classList.remove('active');
-                    
-                    // 👑 完了演出（フラッシュ＆確定音）
-                    els.flash.classList.add('active');
-                    setTimeout(() => els.flash.classList.remove('active'), 600);
-                    Engine.playDecoded();
-                    
-                    els.img.src = src;
-                    els.modal.classList.add('decoded'); // 画像アニメーション開始
-                }, 1600);
-            } else {
-                // 通常閲覧
-                els.decode.classList.remove('active');
-                els.img.src = src;
-                // Safari対策：1フレーム待ってからクラスを付与
-                requestAnimationFrame(() => els.modal.classList.add('decoded'));
-            }
-        }
-
-        // 閉じる処理
-        const closeModal = () => {
-            els.modal.classList.remove('show');
-            els.modal.classList.remove('decoded');
-            clearInterval(hashInterval); ParticleSystem.stop();
-            // メモリ対策：srcを空にする
-            setTimeout(() => { if(!els.modal.classList.contains('show')) els.img.src = ''; }, 300);
-        };
-        els.close.addEventListener('click', closeModal);
-        els.modal.addEventListener('click', (e) => { if(e.target === els.modal) closeModal(); });
-
-        // 背景固定とリセット
-        els.set.addEventListener('click', () => {
-            if (currentSelectedId) {
-                if(els.ctx) els.ctx.resume(); // 音響init
-                fixedBg = currentSelectedId; localStorage.setItem('fixed_bg', fixedBg);
-                renderGrid(); closeModal();
-                alert(`No.${currentSelectedId} をポータル背景に固定しました。`);
-            }
-        });
-        els.resetBtn.addEventListener('click', () => {
-            Engine.init(); fixedBg = '0'; localStorage.setItem('fixed_bg', '0');
-            renderGrid(); alert("背景をランダムスライドショーに戻しました。");
-        });
-
-        // =========================================
-        // 👑 ガチャ実行（iPhone Safari完全対応）
-        // =========================================
-        els.gachaBtn.addEventListener('click', () => {
-            // 👑 【最重要】iPhone対策：ユーザーアクション内でAudio init
-            Engine.init();
-
-            if (currentAP < GACHA_COST || unlockedBgs.length >= TOTAL_IMAGES) return;
-
-            // 👑 サウンド再生
-            Engine.playGachaStart();
-
-            // AP消費
-            currentAP -= GACHA_COST;
-            localStorage.setItem('core_ap', currentAP);
-
-            // ガチャ抽選
             let lockedIds = [];
             for (let i = 1; i <= TOTAL_IMAGES; i++) { if (!unlockedBgs.includes(i)) lockedIds.push(i); }
-            const newId = lockedIds[Math.floor(Math.random() * lockedIds.length)];
-            
-            unlockedBgs.push(newId);
-            localStorage.setItem('unlocked_bgs', JSON.stringify(unlockedBgs));
+            if (lockedIds.length < times) return;
 
-            updateUI();
-            
+            // AP消費処理
+            const cost = GACHA_COST * times;
+            currentAP -= cost;
+            let spentAP = parseInt(localStorage.getItem('spent_ap') || 0);
+            localStorage.setItem('core_ap', currentAP);
+            localStorage.setItem('spent_ap', spentAP + cost);
+
             const folder = getDevicePath();
-            const src = `${folder}bg (${newId}).webp`;
-            
-            openModal(newId, src, true);
-            setTimeout(renderGrid, 1800); // 演出終了後にグリッド更新
+            let pulledIds = [];
+
+            // 抽選
+            for (let t = 0; t < times; t++) {
+                const idx = Math.floor(Math.random() * lockedIds.length);
+                const newId = lockedIds.splice(idx, 1)[0];
+                pulledIds.push(newId);
+                unlockedBgs.push(newId);
+            }
+            localStorage.setItem('unlocked_bgs', JSON.stringify(unlockedBgs));
+            updateUI();
+
+            // 👑 自動スクロール ＆ フリップ演出
+            // 最初の1枚目の位置へスムーズにスクロール
+            const firstCard = document.getElementById(`card-${pulledIds[0]}`);
+            if (firstCard) {
+                firstCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            // 複数枚の場合は時間差（パパパパッ）でめくる
+            pulledIds.forEach((id, index) => {
+                setTimeout(() => {
+                    const card = document.getElementById(`card-${id}`);
+                    if (!card) return;
+
+                    // 1. 裏面に画像をセット
+                    const back = card.querySelector('.item-back');
+                    back.innerHTML = `<img src="${folder}bg (${id}).webp">`;
+
+                    // 2. クラスを付与して裏返す（フラッシュエフェクト付き）
+                    card.classList.add('unlocked', 'flash-effect');
+                    Sound.playFlip();
+
+                    // 3. クリックイベント（プレビュー用）を追加
+                    card.addEventListener('click', () => openPreview(id, `${folder}bg (${id}).webp`));
+                    
+                    // 最後の1枚がめくれたらサクセス音
+                    if(index === pulledIds.length - 1) setTimeout(() => Sound.playSuccess(), 400);
+
+                }, index * 150); // 0.15秒間隔で次々とめくれる
+            });
+        }
+
+        // ボタンのイベントリスナー
+        els.btnSingle.addEventListener('click', () => executeGacha(1));
+        els.btnMulti.addEventListener('click', () => executeGacha(10));
+
+        // =========================================
+        // 🖼️ シンプルなプレビュー＆背景固定機能
+        // =========================================
+        let previewId = null;
+        function openPreview(id, src) {
+            previewId = id;
+            els.img.src = src;
+            els.modal.classList.add('show');
+        }
+
+        const closePreview = () => { els.modal.classList.remove('show'); setTimeout(() => els.img.src = '', 200); };
+        els.close.addEventListener('click', closePreview);
+        els.modal.addEventListener('click', (e) => { if(e.target === els.modal) closePreview(); });
+
+        els.set.addEventListener('click', () => {
+            if (previewId) {
+                Sound.init(); Sound.playSuccess();
+                fixedBg = previewId; localStorage.setItem('fixed_bg', fixedBg);
+                
+                // バッジの付け替え
+                document.querySelectorAll('.gallery-item').forEach(item => item.classList.remove('active'));
+                document.getElementById(`card-${previewId}`).classList.add('active');
+                
+                closePreview();
+                alert(`No.${previewId} をポータル背景に固定しました。`);
+            }
         });
 
-        // 初期化
-        updateUI(); renderGrid();
+        els.resetBtn.addEventListener('click', () => {
+            Sound.init(); Sound.playSuccess();
+            fixedBg = '0'; localStorage.setItem('fixed_bg', '0');
+            document.querySelectorAll('.gallery-item').forEach(item => item.classList.remove('active'));
+            alert("背景をランダムスライドショーに戻しました。");
+        });
+
+        // 初期化実行
+        updateUI(); initGrid();
     </script>
 </body>
 </html>
